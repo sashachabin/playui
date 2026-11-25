@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Code2, Frame, Monitor, Pencil, Plus, Share2, X } from "lucide-react";
+import { Check, ChevronDown, Code2, Monitor, Pencil, Plus, Share2, X } from "lucide-react";
 import {
   useEffect,
   useRef,
@@ -82,14 +82,20 @@ export function Header({
     const frame = requestAnimationFrame(() => {
       const stripRect = strip.getBoundingClientRect();
       const activeRect = active.getBoundingClientRect();
+      let target = strip.scrollLeft;
       if (activeRect.left < stripRect.left) {
-        strip.scrollLeft += activeRect.left - stripRect.left - 4;
+        target += activeRect.left - stripRect.left - 4;
       } else if (activeRect.right > stripRect.right) {
-        strip.scrollLeft += activeRect.right - stripRect.right + 4;
+        target += activeRect.right - stripRect.right + 4;
       }
+      if (Math.abs(target - strip.scrollLeft) <= 1) return;
+      strip.scrollTo({
+        left: target,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
     });
     return () => cancelAnimationFrame(frame);
-  }, [project, openProjects, renaming]);
+  }, [project, openProjects]);
 
   useEffect(() => {
     const element = tabsRef.current;
@@ -352,18 +358,7 @@ export function Header({
       </button>
 
       <div className="file-tabs-wrap">
-        <div
-          className="file-tabs"
-          ref={tabsRef}
-          role="tablist"
-          aria-label="Open prototypes"
-          onWheel={(event) => {
-            if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-            const element = event.currentTarget;
-            if (element.scrollWidth <= element.clientWidth) return;
-            element.scrollLeft += event.deltaY;
-          }}
-        >
+        <div className="file-tabs" ref={tabsRef} role="tablist" aria-label="Open prototypes">
           {openProjects.map((index) => {
             const files = projects[index];
             if (!files) return null;
@@ -448,9 +443,6 @@ export function Header({
                     disabled={busy}
                     title={title}
                   >
-                    <span className="file-tab-icon" aria-hidden="true">
-                      <Frame size={12} />
-                    </span>
                     <span className="file-tab-name">{title}</span>
                   </button>
                 )}
@@ -479,47 +471,47 @@ export function Header({
         >
           <Plus size={15} />
         </button>
-        {overflowing && (
-          <div className="tabs-overflow" ref={overflowRef}>
-            <button
-              type="button"
-              className="tabs-overflow-button"
-              aria-label="All open prototypes"
-              title="All open prototypes"
-              aria-expanded={tabsMenuOpen}
-              onClick={() => {
-                setMenu(null);
-                setTabsMenuOpen((current) => !current);
-              }}
-            >
-              <ChevronDown size={14} />
-            </button>
-            {tabsMenuOpen && (
-              <div className="tabs-list" role="menu">
-                {openProjects.map((index) => {
-                  const label = projectTitle(projects[index] ?? [], index);
-                  return (
-                    <button
-                      key={index}
-                      type="button"
-                      role="menuitem"
-                      className={`tabs-list-item ${index === project ? "active" : ""}`}
-                      disabled={busy}
-                      onClick={() => {
-                        onOpenProject(index);
-                        setTabsMenuOpen(false);
-                      }}
-                    >
-                      <Frame size={12} />
-                      <span>{label}</span>
-                      {index === project && <Check size={12} />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+        <div className={`tabs-overflow ${overflowing ? "" : "is-hidden"}`} ref={overflowRef}>
+          <button
+            type="button"
+            className="tabs-overflow-button"
+            aria-label="All open prototypes"
+            title="All open prototypes"
+            aria-expanded={tabsMenuOpen}
+            aria-hidden={!overflowing}
+            tabIndex={overflowing ? 0 : -1}
+            disabled={!overflowing}
+            onClick={() => {
+              setMenu(null);
+              setTabsMenuOpen((current) => !current);
+            }}
+          >
+            <ChevronDown size={14} />
+          </button>
+          {tabsMenuOpen && (
+            <div className="tabs-list" role="menu">
+              {openProjects.map((index) => {
+                const label = projectTitle(projects[index] ?? [], index);
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    role="menuitem"
+                    className={`tabs-list-item ${index === project ? "active" : ""}`}
+                    disabled={busy}
+                    onClick={() => {
+                      onOpenProject(index);
+                      setTabsMenuOpen(false);
+                    }}
+                  >
+                    <span>{label}</span>
+                    {index === project && <Check size={12} />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       <button

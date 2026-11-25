@@ -1735,6 +1735,7 @@ button {
   gap: 3px;
   height: auto;
   padding: 0;
+  overscroll-behavior-x: contain;
 }
 
 .file-tab {
@@ -1782,21 +1783,6 @@ button {
   text-align: left;
   border: 0;
   background: transparent;
-}
-
-.file-tab.active .file-tab-main {
-  font-weight: 600;
-}
-
-.file-tab-icon {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  color: var(--faint);
-}
-
-.file-tab.active .file-tab-icon {
-  color: var(--text);
 }
 
 .file-tab-main:disabled {
@@ -1950,6 +1936,11 @@ button {
   position: relative;
   display: flex;
   align-items: center;
+}
+
+.tabs-overflow.is-hidden {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .tabs-overflow-button {
@@ -2353,7 +2344,9 @@ button {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  width: 96px;
   height: 34px;
   padding: 0 11px;
   color: var(--text);
@@ -2411,7 +2404,6 @@ button {
   .share-button {
     width: 34px;
     padding: 0;
-    justify-content: center;
   }
 }
 
