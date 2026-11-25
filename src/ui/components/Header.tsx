@@ -346,15 +346,13 @@ export function Header({
         type="button"
         className="brand brand-button"
         aria-label="PlayUI projects"
+        title="Projects"
         onClick={onHome}
       >
         <span className="brand-mark" aria-hidden="true">
           <Logo />
         </span>
         <span className="brand-name">PlayUI</span>
-      </button>
-      <button type="button" className="header-crumb" onClick={onHome}>
-        Projects
       </button>
 
       <div className="file-tabs-wrap">

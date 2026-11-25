@@ -1708,21 +1708,6 @@ button {
   background: #f4f4f5;
 }
 
-.header-crumb {
-  flex: 0 0 auto;
-  padding: 4px 6px;
-  color: var(--muted);
-  font-size: 12px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-}
-
-.header-crumb:hover {
-  color: var(--text);
-  background: #f4f4f5;
-}
-
 .file-tabs-wrap {
   align-items: center;
   align-self: stretch;
@@ -1846,17 +1831,12 @@ button {
 .file-tab-main:focus-visible,
 .file-tab-close:focus-visible,
 .tab-new:focus-visible,
-.header-crumb:focus-visible,
 .brand-button:focus-visible {
   outline: 2px solid #18181b;
   outline-offset: 1px;
 }
 
 @media (max-width: 860px) {
-  .header-crumb {
-    display: none;
-  }
-
   .home-header {
     padding-inline: 12px;
   }
