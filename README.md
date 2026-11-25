@@ -46,9 +46,16 @@ a change in chat and test the result in **Preview**. The assistant can also add 
 theme or preview size, and manage files through structured actions. Switch
 between desktop, tablet and mobile widths using the preview toolbar.
 
-Open **Code** to edit files in Monaco. The file manager can create, rename and
-delete files. Renaming updates relative imports. `App.tsx` and
-`playui.config.json` are protected entry files.
+The left rail lists prototype pages. Add, rename, delete or mark a page as the
+start page; renaming an auto-created page also updates its URL. Open **Code** to
+edit files in Monaco. The file manager can create, rename and delete files.
+Renaming updates relative imports. `App.tsx` and `playui.config.json` are
+protected entry files.
+
+Editor URLs keep the project, page, preview/code mode, device, open file,
+outlines and theme (`#/p/project~id/page?...`). **Share** copies a
+self-contained link with the current project snapshot and page, so recipients
+can open the prototype without an account or server.
 
 Draft files and project settings are saved in this browser. Chat history stays
 with each draft during the session.

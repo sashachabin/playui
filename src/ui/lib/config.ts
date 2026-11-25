@@ -45,3 +45,17 @@ const DESIGN_SYSTEM_LABELS: Record<string, string> = {
 export function designSystemLabel(value: unknown): string {
   return typeof value === "string" ? (DESIGN_SYSTEM_LABELS[value] ?? value) : "Custom";
 }
+
+export function newProjectId(): string {
+  const random = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
+  return random.replace(/-/g, "").slice(0, 8);
+}
+
+export function projectId(files: FileEntry[]): string | undefined {
+  const id = parseConfig(files)?.id;
+  return typeof id === "string" && /^[a-z0-9-]{4,40}$/i.test(id) ? id : undefined;
+}
+
+export function withProjectId(files: FileEntry[]): FileEntry[] {
+  return projectId(files) ? files : writeConfig(files, { id: newProjectId() });
+}

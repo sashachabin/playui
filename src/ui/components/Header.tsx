@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Code2, Frame, Monitor, Pencil, Plus, X } from "lucide-react";
+import { Check, ChevronDown, Code2, Frame, Monitor, Pencil, Plus, Share2, X } from "lucide-react";
 import {
   useEffect,
   useRef,
@@ -25,6 +25,8 @@ type HeaderProps = {
   onRenameProject: (index: number, name: string) => void;
   onNewProject: () => void;
   onSelectTab: (tab: Tab) => void;
+  onShare: () => void;
+  shareState: "idle" | "copying" | "copied" | "error";
 };
 
 type DropTarget = { index: number; after: boolean };
@@ -45,6 +47,8 @@ export function Header({
   onRenameProject,
   onNewProject,
   onSelectTab,
+  onShare,
+  shareState,
 }: HeaderProps) {
   const tabsRef = useRef<HTMLDivElement>(null);
   const renameRef = useRef<HTMLInputElement>(null);
@@ -517,6 +521,20 @@ export function Header({
           </div>
         )}
       </div>
+
+      <button
+        type="button"
+        className="share-button"
+        aria-label="Copy shareable prototype link"
+        onClick={onShare}
+        disabled={shareState === "copying"}
+        title="Copy a shareable prototype link"
+      >
+        {shareState === "copied" ? <Check size={14} /> : <Share2 size={14} />}
+        <span>
+          {shareState === "copied" ? "Copied" : shareState === "copying" ? "Copying…" : "Share"}
+        </span>
+      </button>
 
       <div className="view-switch" role="tablist" aria-label="View">
         <button

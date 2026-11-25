@@ -3,7 +3,6 @@ import type { compilePreview } from "../preview/compile";
 
 import { ChatPanel } from "./components/ChatPanel";
 import { EditorPane } from "./components/EditorPane";
-import { FileBrowser } from "./components/FileBrowser";
 import { FileManagerDialog } from "./components/FileManagerDialog";
 import { FileSettingsDialog } from "./components/FileSettingsDialog";
 import { Header } from "./components/Header";
@@ -11,9 +10,17 @@ import { HomeScreen } from "./components/HomeScreen";
 import { NewFileDialog } from "./components/NewFileDialog";
 import { NewPrototypeDialog } from "./components/NewPrototypeDialog";
 import { PreviewCanvas } from "./components/PreviewCanvas";
+import { ProjectSidebar } from "./components/ProjectSidebar";
 import { DEFAULT_PAGES, initialFiles, type ProjectTemplate } from "./data";
 import { applyEditorActions } from "./lib/actions";
-import { parseConfig, writeConfig } from "./lib/config";
+import {
+  newProjectId,
+  parseConfig,
+  projectId,
+  projectTitle,
+  withProjectId,
+  writeConfig,
+} from "./lib/config";
 import {
   PROTECTED_FILES,
   languageFromName,
@@ -22,7 +29,15 @@ import {
   rewriteImports,
   starterFileContent,
 } from "./lib/files";
-import { PAGE_PATH } from "./lib/pages";
+import { PAGE_PATH, pathFromLabel, rewriteRouteLinks } from "./lib/pages";
+import { encodeSnapshot } from "./lib/share";
+import {
+  buildProjectHash,
+  buildShareHash,
+  parseLocation,
+  projectIdFromRef,
+  projectRef,
+} from "./lib/url";
 import type { Device, EditorAction, FileEntry, Message, Page, Tab } from "./types";
 import { loadWorkspace, saveWorkspace } from "./workspace";
 
@@ -39,17 +54,48 @@ type ProjectViewState = {
 };
 
 export function App() {
-  const [workspace] = useState(() =>
-    loadWorkspace({
+  const [workspace] = useState(() => {
+    const loaded = loadWorkspace({
       projects: [initialFiles],
       pages: [DEFAULT_PAGES],
       active: 0,
-    }),
-  );
+    });
+    return { ...loaded, projects: loaded.projects.map(withProjectId) };
+  });
+  const [initialLocation] = useState(() => parseLocation());
+  const urlProject =
+    initialLocation.kind === "project"
+      ? workspace.projects.findIndex(
+          (projectFiles) =>
+            projectId(projectFiles) === projectIdFromRef(initialLocation.projectRef),
+        )
+      : -1;
+  const initialProject = urlProject >= 0 ? urlProject : workspace.active;
+  const initialPages = workspace.pages[initialProject] ?? DEFAULT_PAGES;
+  const initialConfig = parseConfig(workspace.projects[initialProject]!);
+  const configuredStart =
+    typeof initialConfig?.startRoute === "string" ? initialConfig.startRoute : undefined;
+  const initialStart =
+    configuredStart && initialPages.some((page) => page.path === configuredStart)
+      ? configuredStart
+      : (initialPages[0]?.path ?? "/");
+  const initialFileList = workspace.projects[initialProject]!;
+  const initialRoute =
+    initialLocation.kind === "project" && PAGE_PATH.test(initialLocation.page)
+      ? initialLocation.page
+      : initialStart;
+  const initialFile =
+    initialLocation.kind === "project" &&
+    initialLocation.file &&
+    initialFileList.some((file) => file.name === initialLocation.file)
+      ? initialLocation.file
+      : "App.tsx";
   const [projects, setProjects] = useState(workspace.projects);
-  const [project, setProject] = useState(workspace.active);
-  const [openProjects, setOpenProjects] = useState([workspace.active]);
-  const [view, setView] = useState<"home" | "workspace">("home");
+  const [project, setProject] = useState(initialProject);
+  const [openProjects, setOpenProjects] = useState([initialProject]);
+  const [view, setView] = useState<"home" | "workspace">(
+    initialLocation.kind === "project" && urlProject >= 0 ? "workspace" : "home",
+  );
   const [projectPages, setProjectPages] = useState<Page[][]>(workspace.pages);
   const [storageError, setStorageError] = useState(false);
   useEffect(() => {
@@ -81,18 +127,25 @@ export function App() {
     );
   }
 
-  const [activeFile, setActiveFile] = useState("App.tsx");
-  const [device, setDevice] = useState<Device>("desktop");
+  const [activeFile, setActiveFile] = useState(initialFile);
+  const [device, setDevice] = useState<Device>(
+    initialLocation.kind === "project" ? initialLocation.device : "desktop",
+  );
   const [revision, setRevision] = useState(0);
-  const [route, setRoute] = useState(() => {
-    const config = parseConfig(workspace.projects[workspace.active]!);
-    return typeof config?.startRoute === "string" ? config.startRoute : "/";
-  });
-  const [dark, setDark] = useState<boolean>();
-  const [tab, setTab] = useState<Tab>("preview");
+  const [route, setRoute] = useState(initialRoute);
+  const [dark, setDark] = useState<boolean | undefined>(
+    initialLocation.kind === "project" && initialLocation.theme
+      ? initialLocation.theme === "dark"
+      : undefined,
+  );
+  const [tab, setTab] = useState<Tab>(
+    initialLocation.kind === "project" ? initialLocation.tab : "preview",
+  );
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
-  const [outlines, setOutlines] = useState(false);
+  const [outlines, setOutlines] = useState(
+    initialLocation.kind === "project" ? initialLocation.outlines : false,
+  );
   const [projectMessages, setProjectMessages] = useState<Record<number, Message[]>>({});
   const messages = projectMessages[project] ?? [];
   function setMessages(update: (current: Message[]) => Message[]) {
@@ -103,6 +156,13 @@ export function App() {
   const [newFileOpen, setNewFileOpen] = useState(false);
   const [fileSettingsName, setFileSettingsName] = useState<string | null>(null);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [shareState, setShareState] = useState<"idle" | "copying" | "copied" | "error">("idle");
+
+  useEffect(() => {
+    if (shareState === "idle") return;
+    const timer = window.setTimeout(() => setShareState("idle"), 2500);
+    return () => window.clearTimeout(timer);
+  }, [shareState]);
 
   const config = parseConfig(files);
   const locale = typeof config?.locale === "string" ? config.locale : "en-US";
@@ -151,6 +211,35 @@ export function App() {
 
   const theme = config?.theme === "dark" ? "dark" : "light";
   const isDark = dark ?? theme === "dark";
+
+  const currentRef = projectRef(projectTitle(files, project), projectId(files) ?? `p${project}`);
+
+  useEffect(() => {
+    if (view !== "workspace") {
+      if (window.location.hash !== "#/" && window.location.hash !== "") {
+        history.replaceState(null, "", "#/");
+      }
+      return;
+    }
+    const hash = buildProjectHash({
+      projectRef: currentRef,
+      page: route,
+      tab,
+      device,
+      file: activeFile,
+      outlines,
+      theme: isDark ? "dark" : "light",
+    });
+    if (window.location.hash !== hash) history.replaceState(null, "", hash);
+  }, [view, currentRef, route, tab, device, activeFile, outlines, isDark]);
+
+  useEffect(() => {
+    function reload() {
+      window.location.reload();
+    }
+    window.addEventListener("hashchange", reload);
+    return () => window.removeEventListener("hashchange", reload);
+  }, []);
   const preview = useMemo(
     () =>
       compiled?.document(compiled.bundle, {
@@ -281,6 +370,71 @@ export function App() {
     );
   }
 
+  function selectPage(path: string) {
+    setRoute(path);
+    setTab("preview");
+  }
+
+  function addPage() {
+    const labels = new Set(pages.map((page) => page.label.toLowerCase()));
+    const paths = new Set(pages.map((page) => page.path));
+    let number = 1;
+    let label = `Page ${number}`;
+    let path = pathFromLabel(label);
+    while (labels.has(label.toLowerCase()) || paths.has(path)) {
+      number += 1;
+      label = `Page ${number}`;
+      path = pathFromLabel(label);
+    }
+    const page = { path, label };
+    setPages((current) => [...current, page]);
+    setRoute(path);
+    setTab("preview");
+    return page;
+  }
+
+  function renamePage(path: string, label: string) {
+    const name = label.trim();
+    if (!name) return;
+    let nextPath = path;
+    if (/^\/page-\d+$/.test(path)) {
+      const base = pathFromLabel(name) || path;
+      nextPath = base;
+      let suffix = 2;
+      while (pages.some((page) => page.path !== path && page.path === nextPath)) {
+        nextPath = `${base}-${suffix}`;
+        suffix += 1;
+      }
+    }
+    setPages((current) =>
+      current.map((page) => (page.path === path ? { ...page, label: name, path: nextPath } : page)),
+    );
+    if (nextPath === path) return;
+    setFiles((current) => rewriteRouteLinks(current, path, nextPath));
+    if (route === path) setRoute(nextPath);
+    const changes: Record<string, unknown> = {};
+    if (startRoute === path) changes.startRoute = nextPath;
+    if (afterSubmit === path) changes.afterSubmit = nextPath;
+    if (Object.keys(changes).length > 0) {
+      setFiles((current) => writeConfig(current, changes));
+    }
+  }
+
+  function deletePage(path: string) {
+    if (pages.length <= 1) return;
+    const remaining = pages.filter((page) => page.path !== path);
+    setPages(() => remaining);
+    if (route === path) setRoute(remaining[0]!.path);
+    const changes: Record<string, unknown> = {};
+    if (startRoute === path) changes.startRoute = remaining[0]!.path;
+    if (afterSubmit === path) changes.afterSubmit = "";
+    if (Object.keys(changes).length > 0) setFiles((current) => writeConfig(current, changes));
+  }
+
+  function setStartPage(path: string) {
+    setFiles((current) => writeConfig(current, { startRoute: path }));
+  }
+
   function updateFile(value: string | undefined) {
     setFiles((current) =>
       current.map((file) => (file.name === activeFile ? { ...file, value: value ?? "" } : file)),
@@ -302,6 +456,7 @@ export function App() {
         value: JSON.stringify(
           {
             ...base,
+            id: newProjectId(),
             name: template.name,
             designSystem: template.system,
             packages: template.packages,
@@ -316,6 +471,42 @@ export function App() {
     setProjects((current) => [...current, draft]);
     setProjectPages((current) => [...current, DEFAULT_PAGES]);
     openProject(projects.length, draft);
+  }
+
+  async function shareProject() {
+    if (shareState === "copying") return;
+    setShareState("copying");
+    try {
+      const payload = await encodeSnapshot({ title: projectTitle(files, project), files, pages });
+      const url = new URL(window.location.href);
+      url.hash = buildShareHash(payload, {
+        page: route,
+        device,
+        theme: isDark ? "dark" : "light",
+      });
+      const text = url.toString();
+      if (navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(text);
+          setShareState("copied");
+          return;
+        } catch {
+          // Fall back to a selection copy outside secure contexts.
+        }
+      }
+      const field = document.createElement("textarea");
+      field.value = text;
+      field.style.position = "fixed";
+      field.style.opacity = "0";
+      document.body.append(field);
+      field.select();
+      const copied = document.execCommand("copy");
+      field.remove();
+      if (!copied) throw new Error("Clipboard unavailable");
+      setShareState("copied");
+    } catch {
+      setShareState("error");
+    }
   }
 
   async function sendPrompt(event: React.FormEvent) {
@@ -364,7 +555,7 @@ export function App() {
             (action): action is EditorAction => typeof action?.type === "string",
           )
         : [];
-      const mergedFiles = mergeModelFiles(filesRef.current, changes, files);
+      const mergedFiles = withProjectId(mergeModelFiles(filesRef.current, changes, files));
       const applied = applyEditorActions(
         {
           files: mergedFiles,
@@ -497,6 +688,8 @@ export function App() {
         onRenameProject={renameProject}
         onNewProject={() => setNewProjectOpen(true)}
         onSelectTab={setTab}
+        onShare={() => void shareProject()}
+        shareState={shareState}
       />
 
       {storageError && (
@@ -506,15 +699,23 @@ export function App() {
       )}
 
       <div className={`app-body ${tab === "code" ? "is-coding" : "is-previewing"}`}>
-        {tab === "code" && (
-          <FileBrowser
-            files={files}
-            activeFile={activeFile}
-            onOpenFile={openFile}
-            onNewFile={() => setNewFileOpen(true)}
-            onOpenFiles={() => setFilesOpen(true)}
-          />
-        )}
+        <ProjectSidebar
+          pages={pages}
+          route={route}
+          startRoute={startRoute}
+          files={files}
+          activeFile={activeFile}
+          showFiles={tab === "code"}
+          busy={busy}
+          onSelectPage={selectPage}
+          onAddPage={addPage}
+          onRenamePage={renamePage}
+          onDeletePage={deletePage}
+          onSetStartPage={setStartPage}
+          onOpenFile={openFile}
+          onNewFile={() => setNewFileOpen(true)}
+          onOpenFiles={() => setFilesOpen(true)}
+        />
 
         <section className="workspace">
           {tab === "code" ? (
@@ -556,6 +757,17 @@ export function App() {
           onSubmit={(event) => void sendPrompt(event)}
         />
       </div>
+
+      {shareState === "copied" && (
+        <div className="toast" role="status">
+          Share link copied
+        </div>
+      )}
+      {shareState === "error" && (
+        <div className="toast toast-error" role="alert">
+          Could not copy the share link
+        </div>
+      )}
 
       {newProjectOpen && (
         <NewPrototypeDialog
