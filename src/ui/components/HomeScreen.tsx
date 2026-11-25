@@ -54,6 +54,7 @@ export function HomeScreen({
                 onClick={() => onOpenProject(index)}
               >
                 <span className="project-thumb" aria-hidden="true">
+                  <span className="project-index">{String(index + 1).padStart(2, "0")}</span>
                   <span className="project-frame">
                     <span className="project-frame-title">{projectTitle(files, index)}</span>
                     <span className="project-frame-line" />
