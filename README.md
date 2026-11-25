@@ -39,8 +39,10 @@ interface or flow you want to prototype.
 
 PlayUI bundles TSX and CSS in the browser and runs the result in a sandboxed iframe.
 Use **+** to start a design-system example. Projects open as tabs, and closing
-the last tab returns to the projects screen. Describe a change in chat and test
-the result in **Preview**. The assistant can also add pages, switch the
+the last tab returns to the projects screen. Drag tabs to reorder them,
+double-click to rename, right-click for close actions, or middle-click to close.
+Each tab remembers its preview/code mode, route, device and open file. Describe
+a change in chat and test the result in **Preview**. The assistant can also add pages, switch the
 theme or preview size, and manage files through structured actions. Switch
 between desktop, tablet and mobile widths using the preview toolbar.
 

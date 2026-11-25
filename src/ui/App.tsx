@@ -13,7 +13,7 @@ import { NewPrototypeDialog } from "./components/NewPrototypeDialog";
 import { PreviewCanvas } from "./components/PreviewCanvas";
 import { DEFAULT_PAGES, initialFiles, type ProjectTemplate } from "./data";
 import { applyEditorActions } from "./lib/actions";
-import { parseConfig } from "./lib/config";
+import { parseConfig, writeConfig } from "./lib/config";
 import {
   PROTECTED_FILES,
   languageFromName,
@@ -27,6 +27,16 @@ import type { Device, EditorAction, FileEntry, Message, Page, Tab } from "./type
 import { loadWorkspace, saveWorkspace } from "./workspace";
 
 const AI_TIMEOUT_MS = 240_000;
+
+type ProjectViewState = {
+  activeFile: string;
+  device: Device;
+  route: string;
+  dark: boolean | undefined;
+  tab: Tab;
+  outlines: boolean;
+  prompt: string;
+};
 
 export function App() {
   const [workspace] = useState(() =>
@@ -106,6 +116,9 @@ export function App() {
       ? config.afterSubmit
       : "";
 
+  const projectViews = useRef<Record<number, ProjectViewState>>({});
+  const skipSaveView = useRef(false);
+
   const [compiled, setCompiled] = useState<{
     bundle: Awaited<ReturnType<typeof compilePreview>>;
     document: typeof import("../preview/compile").previewDocument;
@@ -161,7 +174,20 @@ export function App() {
     return () => window.removeEventListener("message", navigate);
   }, []);
 
+  function saveProjectView() {
+    if (view !== "workspace") return;
+    projectViews.current[project] = { activeFile, device, route, dark, tab, outlines, prompt };
+  }
+
+  function goHome() {
+    if (view === "workspace") saveProjectView();
+    setView("home");
+  }
+
   function openProject(index: number, projectFiles: FileEntry[]) {
+    if (index === project && view === "workspace") return;
+    if (!skipSaveView.current) saveProjectView();
+    skipSaveView.current = false;
     setOpenProjects((current) => (current.includes(index) ? current : [...current, index]));
     setView("workspace");
     const projectPageList = projectPages[index] ?? DEFAULT_PAGES;
@@ -176,15 +202,25 @@ export function App() {
     } catch {
       // Ignore an unfinished config and fall back to the first page.
     }
+    const stored = projectViews.current[index];
+    const targetFiles = projects[index] ?? projectFiles;
+    const storedFile = stored?.activeFile;
+    const nextRoute = stored?.route;
     setCompiled(undefined);
     setBuildError("");
     setRuntimeError("");
     setProject(index);
-    setActiveFile("App.tsx");
-    setRoute(start);
-    setDark(undefined);
-    setPrompt("");
-    setTab("preview");
+    setActiveFile(
+      storedFile && targetFiles.some((file) => file.name === storedFile) ? storedFile : "App.tsx",
+    );
+    setRoute(
+      nextRoute && projectPageList.some((page) => page.path === nextRoute) ? nextRoute : start,
+    );
+    setDark(stored?.dark);
+    setDevice(stored?.device ?? device);
+    setOutlines(stored?.outlines ?? outlines);
+    setPrompt(stored?.prompt ?? "");
+    setTab(stored?.tab ?? "preview");
     setFilesOpen(false);
     setNewFileOpen(false);
     setFileSettingsName(null);
@@ -193,15 +229,56 @@ export function App() {
   }
 
   function closeProject(index: number) {
+    const position = openProjects.indexOf(index);
     const remaining = openProjects.filter((candidate) => candidate !== index);
+    if (index === project) saveProjectView();
+    delete projectViews.current[index];
     setOpenProjects(remaining);
     if (index !== project) return;
     if (remaining.length === 0) {
       setView("home");
       return;
     }
-    const next = remaining[0]!;
+    skipSaveView.current = true;
+    const next = remaining[Math.min(position, remaining.length - 1)]!;
     openProject(next, projects[next]!);
+  }
+
+  function closeOtherProjects(index: number) {
+    for (const candidate of openProjects) {
+      if (candidate !== index) delete projectViews.current[candidate];
+    }
+    setOpenProjects([index]);
+    if (index !== project) {
+      skipSaveView.current = true;
+      openProject(index, projects[index]!);
+    }
+  }
+
+  function closeProjectsToRight(index: number) {
+    const position = openProjects.indexOf(index);
+    if (position < 0) return;
+    const remaining = openProjects.slice(0, position + 1);
+    for (const candidate of openProjects.slice(position + 1)) {
+      delete projectViews.current[candidate];
+    }
+    setOpenProjects(remaining);
+    if (!remaining.includes(project)) {
+      skipSaveView.current = true;
+      openProject(index, projects[index]!);
+    }
+  }
+
+  function reorderProjects(next: number[]) {
+    if (next.length === openProjects.length) setOpenProjects(next);
+  }
+
+  function renameProject(index: number, name: string) {
+    setProjects((current) =>
+      current.map((projectFiles, projectIndex) =>
+        projectIndex === index ? writeConfig(projectFiles, { name }) : projectFiles,
+      ),
+    );
   }
 
   function updateFile(value: string | undefined) {
@@ -411,9 +488,13 @@ export function App() {
         project={project}
         busy={busy}
         tab={tab}
-        onHome={() => setView("home")}
+        onHome={goHome}
         onOpenProject={(index) => openProject(index, projects[index]!)}
         onCloseProject={closeProject}
+        onCloseOtherProjects={closeOtherProjects}
+        onCloseProjectsToRight={closeProjectsToRight}
+        onReorderProjects={reorderProjects}
+        onRenameProject={renameProject}
         onNewProject={() => setNewProjectOpen(true)}
         onSelectTab={setTab}
       />

@@ -1749,6 +1749,11 @@ button {
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
+  user-select: none;
+  transition:
+    background 100ms ease,
+    border-color 100ms ease,
+    color 100ms ease;
 }
 
 .file-tab:hover:not(.active) {
@@ -1889,4 +1894,226 @@ button {
     flex-direction: column;
     gap: 6px;
   }
+}
+
+/* ---------- Tab interactions ---------- */
+
+.file-tab {
+  position: relative;
+  cursor: default;
+}
+
+.file-tab.dragging {
+  cursor: grabbing;
+  opacity: 0.45;
+}
+
+.file-tab.drop-before::before,
+.file-tab.drop-after::after {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  z-index: 2;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--ink);
+  content: "";
+}
+
+.file-tab.drop-before::before {
+  left: -3px;
+}
+
+.file-tab.drop-after::after {
+  right: -3px;
+}
+
+.file-tab-main {
+  cursor: pointer;
+}
+
+.file-tab-rename {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  padding: 0 4px;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  outline: none;
+  background: #ffffff;
+}
+
+.tabs-overflow {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tabs-overflow-button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 30px;
+  color: var(--muted);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.tabs-overflow-button:hover {
+  color: var(--text);
+  background: #f4f4f5;
+}
+
+.tabs-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 80;
+  width: 236px;
+  max-height: min(340px, 70vh);
+  padding: 4px;
+  overflow: auto;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 36px rgb(24 24 27 / 14%);
+}
+
+.tabs-list-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+}
+
+.tabs-list-item:hover {
+  background: #f4f4f5;
+}
+
+.tabs-list-item.active {
+  font-weight: 600;
+  background: #f4f4f5;
+}
+
+.tabs-list-item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.tabs-list-item > span {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tabs-list-item svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.tab-menu {
+  position: fixed;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 196px;
+  padding: 4px;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 36px rgb(24 24 27 / 14%);
+}
+
+.tab-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+}
+
+.tab-menu button:hover:not(:disabled) {
+  background: #f4f4f5;
+}
+
+.tab-menu button:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+
+.tab-menu button svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.tab-menu button:disabled svg {
+  color: var(--faint);
+}
+
+.tab-menu-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
+.tab-menu button:focus-visible,
+.tabs-overflow-button:focus-visible,
+.tabs-list-item:focus-visible {
+  outline: 1px solid #c9c9ce;
+  outline-offset: -1px;
+  background: #f4f4f5;
+}
+
+.tab-menu,
+.tabs-list {
+  animation: tab-menu-in 90ms ease-out;
+  transform-origin: top left;
+}
+
+@keyframes tab-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px) scale(0.99);
+  }
+}
+
+.file-tab {
+  touch-action: none;
+}
+
+.file-tab.dragging {
+  z-index: 3;
+  cursor: grabbing;
+  opacity: 0.85;
+  transition: none;
+  pointer-events: none;
+  box-shadow:
+    0 1px 2px rgb(24 24 27 / 5%),
+    0 8px 20px rgb(24 24 27 / 12%);
+}
+
+.is-dragging-tab,
+.is-dragging-tab * {
+  cursor: grabbing !important;
 }
