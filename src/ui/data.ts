@@ -1,11 +1,15 @@
-import starter from "../preview/starter.tsx?raw";
+import antdPackage from "antd/package.json";
+import starterAntd from "../preview/antd.tsx?raw";
+import starterKontur from "../preview/starter.tsx?raw";
+import starterMui from "../preview/mui.tsx?raw";
+import starterChakra from "../preview/chakra.tsx?raw";
 import type { FileEntry, Page } from "./types";
 
 export const initialFiles: FileEntry[] = [
   {
     name: "App.tsx",
     language: "typescript",
-    value: starter,
+    value: starterKontur,
   },
   {
     name: "styles.css",
@@ -35,13 +39,30 @@ export const DEFAULT_PAGES: Page[] = [
   { path: "/done", label: "Success" },
 ];
 
-export const templates = [
+export type ProjectTemplate = {
+  name: string;
+  route: string;
+  system: string;
+  systemLabel: string;
+  description: string;
+  packages: Record<string, string>;
+  appSource: string;
+};
+
+const konturPackages = {
+  "@skbkontur/react-ui": "6.5.7",
+  "@skbkontur/colors": "3.0.0",
+};
+
+export const templates: ProjectTemplate[] = [
   {
     name: "Sign-up flow",
     route: "/",
     system: "@skbkontur/react-ui",
     systemLabel: "Kontur UI",
     description: "Account creation with email, password and a sign-in link.",
+    packages: konturPackages,
+    appSource: starterKontur,
   },
   {
     name: "Password reset",
@@ -49,6 +70,8 @@ export const templates = [
     system: "@skbkontur/react-ui",
     systemLabel: "Kontur UI",
     description: "Request a reset link and continue the flow.",
+    packages: konturPackages,
+    appSource: starterKontur,
   },
   {
     name: "Ant Design sign-up",
@@ -56,5 +79,25 @@ export const templates = [
     system: "antd",
     systemLabel: "Ant Design",
     description: "The same sign-up flow built with Ant Design components.",
+    packages: { antd: antdPackage.version },
+    appSource: starterAntd,
+  },
+  {
+    name: "MUI sign-up",
+    route: "/",
+    system: "@mui/material",
+    systemLabel: "MUI",
+    description: "Material UI form with stacked fields and contained buttons.",
+    packages: { "@mui/material": "9.6.0" },
+    appSource: starterMui,
+  },
+  {
+    name: "Chakra sign-up",
+    route: "/",
+    system: "@chakra-ui/react",
+    systemLabel: "Chakra UI",
+    description: "Chakra form controls with an accessible VStack layout.",
+    packages: { "@chakra-ui/react": "2.10.4" },
+    appSource: starterChakra,
   },
 ];

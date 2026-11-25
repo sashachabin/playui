@@ -68,3 +68,11 @@ test("rejects packages without an exact version", async () => {
   });
   assert.match(errors.join("\n"), /unsupported import "clsx"/);
 });
+
+test("allows the bundled and on-demand design systems", async () => {
+  const errors = await findProjectErrors({
+    "App.tsx":
+      'import { Button } from "@mui/material";\nimport { Input } from "@chakra-ui/react";\nexport default () => <Button />;',
+  });
+  assert.deepEqual(errors, []);
+});

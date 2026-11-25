@@ -57,10 +57,11 @@ export async function compilePreview(files: Record<string, string>) {
             ) {
               const subpath = path.slice(name.length);
               if (!subpath.split("/").some((segment) => segment === "." || segment === "..")) {
-                const external = "react,react-dom,react/jsx-runtime,react-dom/client";
+                const external = "react,react-dom,react-dom/client,react/jsx-runtime";
+                const externalParam = external.split(",").map(encodeURIComponent).join(",");
                 remote.set(
                   path,
-                  `https://esm.sh/${name}@${version}${subpath}?external=${external}`,
+                  `https://esm.sh/${name}@${version}${subpath}?bundle&external=${externalParam}`,
                 );
                 return { path, external: true };
               }

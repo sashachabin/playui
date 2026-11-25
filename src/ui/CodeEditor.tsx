@@ -11,6 +11,7 @@ import reactGlobal from "../../node_modules/@types/react/global.d.ts?raw";
 import jsxRuntime from "../../node_modules/@types/react/jsx-runtime.d.ts?raw";
 import jsxDevRuntime from "../../node_modules/@types/react/jsx-dev-runtime.d.ts?raw";
 import cssTypes from "../../node_modules/csstype/index.d.ts?raw";
+import designSystemTypes from "../preview/design-system-types.d.ts?raw";
 
 self.MonacoEnvironment = {
   getWorker(_moduleId, label) {
@@ -51,6 +52,10 @@ typescriptDefaults.setExtraLibs([
     filePath: "file:///prototype/node_modules/@types/react/jsx-dev-runtime.d.ts",
   },
   { content: cssTypes, filePath: "file:///prototype/node_modules/csstype/index.d.ts" },
+  {
+    content: designSystemTypes,
+    filePath: "file:///prototype/design-system-types.d.ts",
+  },
 ]);
 
 loader.config({ monaco });

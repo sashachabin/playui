@@ -1,7 +1,14 @@
 import { build, transform, type Loader, type Plugin } from "esbuild";
 import { posix } from "node:path";
 
-const ALLOWED_BARE_ROOTS = new Set(["react", "react-dom", "@skbkontur/react-ui", "antd"]);
+const ALLOWED_BARE_ROOTS = new Set([
+  "react",
+  "react-dom",
+  "@skbkontur/react-ui",
+  "antd",
+  "@mui/material",
+  "@chakra-ui/react",
+]);
 const RESOLVE_SUFFIXES = ["", ".tsx", ".ts", ".jsx", ".js", "/index.tsx"];
 const MAX_REPORTED_ERRORS = 8;
 

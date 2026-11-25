@@ -34,3 +34,14 @@ export function writeConfig(files: FileEntry[], changes: Record<string, unknown>
     return { ...file, value: JSON.stringify({ ...base, ...changes }, null, 2) };
   });
 }
+
+const DESIGN_SYSTEM_LABELS: Record<string, string> = {
+  "@skbkontur/react-ui": "Kontur UI",
+  antd: "Ant Design",
+  "@mui/material": "MUI",
+  "@chakra-ui/react": "Chakra UI",
+};
+
+export function designSystemLabel(value: unknown): string {
+  return typeof value === "string" ? (DESIGN_SYSTEM_LABELS[value] ?? value) : "Custom";
+}
