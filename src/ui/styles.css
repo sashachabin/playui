@@ -894,10 +894,6 @@ button:disabled {
 }
 
 @media (max-width: 560px) {
-  .brand-name {
-    display: none;
-  }
-
   .editor-bar-hint {
     display: none;
   }
