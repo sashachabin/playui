@@ -6,7 +6,6 @@ import {
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { Logo } from "../Logo";
 import { projectTitle } from "../lib/config";
 import type { FileEntry, Tab } from "../types";
 
@@ -349,9 +348,6 @@ export function Header({
         title="Projects"
         onClick={onHome}
       >
-        <span className="brand-mark" aria-hidden="true">
-          <Logo />
-        </span>
         <span className="brand-name">PlayUI</span>
       </button>
 
