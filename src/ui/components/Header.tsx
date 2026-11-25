@@ -1,4 +1,5 @@
-import { Code2, Monitor, Plus, X } from "lucide-react";
+import { Code2, Frame, Monitor, Plus, X } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { Logo } from "../Logo";
 import { projectTitle } from "../lib/config";
 import type { FileEntry, Tab } from "../types";
@@ -28,6 +29,14 @@ export function Header({
   onNewProject,
   onSelectTab,
 }: HeaderProps) {
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    tabsRef.current
+      ?.querySelector<HTMLElement>(".file-tab.active")
+      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [project, openProjects]);
+
   return (
     <header className="app-header">
       <button
@@ -46,7 +55,7 @@ export function Header({
       </button>
 
       <div className="file-tabs-wrap">
-        <div className="file-tabs" role="tablist" aria-label="Open prototypes">
+        <div className="file-tabs" ref={tabsRef} role="tablist" aria-label="Open prototypes">
           {openProjects.map((index) => {
             const files = projects[index];
             if (!files) return null;
@@ -63,6 +72,9 @@ export function Header({
                   disabled={busy}
                   title={title}
                 >
+                  <span className="file-tab-icon" aria-hidden="true">
+                    <Frame size={12} />
+                  </span>
                   <span className="file-tab-name">{title}</span>
                 </button>
                 <button
