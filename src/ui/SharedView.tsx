@@ -4,8 +4,8 @@ import { Logo } from "./Logo";
 import { PreviewCanvas } from "./components/PreviewCanvas";
 import { parseConfig } from "./lib/config";
 import { PAGE_PATH } from "./lib/pages";
-import type { SharedProject } from "./lib/share";
-import { buildShareHash } from "./lib/url";
+import { importSharedProject, type SharedProject } from "./lib/share";
+import { buildProjectHash, buildShareHash } from "./lib/url";
 import type { Device } from "./types";
 
 type SharedViewProps = {
@@ -46,6 +46,7 @@ export function SharedView({
   }>();
   const [buildError, setBuildError] = useState("");
   const [runtimeError, setRuntimeError] = useState("");
+  const [openError, setOpenError] = useState("");
   const frame = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
@@ -98,24 +99,47 @@ export function SharedView({
     if (window.location.hash !== hash) history.replaceState(null, "", hash);
   }, [payload, route, device, isDark]);
 
+  function openInPlayUI() {
+    try {
+      const target = importSharedProject(project, route);
+      window.location.hash = buildProjectHash({
+        projectRef: target.projectRef,
+        page: target.page,
+        tab: "preview",
+        device,
+        outlines: false,
+        theme: isDark ? "dark" : "light",
+      });
+    } catch {
+      setOpenError("Could not open this project in PlayUI.");
+    }
+  }
+
   const screenLabel = project.pages.find((page) => page.path === route)?.label ?? "Custom screen";
 
   return (
     <main className="shared">
       <header className="shared-header">
-        <div className="brand" aria-label="PlayUI">
+        <button
+          type="button"
+          className="brand shared-brand"
+          aria-label="Open this project in PlayUI"
+          title="Open this project in PlayUI"
+          onClick={openInPlayUI}
+        >
           <span className="brand-mark" aria-hidden="true">
             <Logo />
           </span>
           <span className="brand-name">PlayUI</span>
-        </div>
+        </button>
         <span className="shared-divider" aria-hidden="true" />
         <span className="shared-title">{project.title}</span>
         <span className="shared-badge">Prototype</span>
         <span className="shared-spacer" />
-        <a className="shared-back" href="#/">
-          Open PlayUI
-        </a>
+        {openError && <span className="shared-open-error">{openError}</span>}
+        <button type="button" className="shared-back" onClick={openInPlayUI}>
+          Open in PlayUI
+        </button>
       </header>
       <div className="shared-body">
         <aside className="shared-pages" aria-label="Prototype pages">

@@ -2596,3 +2596,29 @@ button {
     max-width: 45vw;
   }
 }
+
+.shared-brand {
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+}
+
+.shared-brand:hover {
+  background: #f4f4f5;
+}
+
+.shared-back {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.shared-open-error {
+  overflow: hidden;
+  max-width: 220px;
+  color: #8d2921;
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

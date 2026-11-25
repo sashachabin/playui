@@ -55,7 +55,9 @@ protected entry files.
 Editor URLs keep the project, page, preview/code mode, device, open file,
 outlines and theme (`#/p/project~id/page?...`). **Share** copies a
 self-contained link with the current project snapshot and page, so recipients
-can open the prototype without an account or server.
+can open the prototype without an account or server. In the shared viewer,
+**Open in PlayUI** imports a copy of the project into the local workspace and
+opens it in the editor.
 
 Draft files and project settings are saved in this browser. Chat history stays
 with each draft during the session.

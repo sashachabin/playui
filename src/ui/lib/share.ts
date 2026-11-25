@@ -1,5 +1,8 @@
 import type { FileEntry, Page } from "../types";
+import { newProjectId, writeConfig } from "./config";
 import { PAGE_PATH } from "./pages";
+import { projectRef } from "./url";
+import { loadWorkspace, saveWorkspace } from "../workspace";
 
 export type SharedProject = { title: string; files: FileEntry[]; pages: Page[] };
 
@@ -103,4 +106,33 @@ function parsePages(value: unknown): Page[] {
     .slice(0, 50);
   if (pages.length === 0) throw new Error("This share link has no valid pages.");
   return pages;
+}
+
+export function importSharedProject(
+  project: SharedProject,
+  page: string,
+): { projectRef: string; page: string } {
+  const id = newProjectId();
+  const files = project.files.map((file) =>
+    file.name === "playui.config.json"
+      ? writeConfig([file], { id, name: project.title })[0]!
+      : { ...file },
+  );
+  const fallback = { projects: [files], pages: [project.pages], active: 0 };
+  const workspace = loadWorkspace(fallback);
+  const existing = workspace !== fallback;
+  const next = existing
+    ? {
+        projects: [...workspace.projects, files],
+        pages: [...workspace.pages, project.pages],
+        active: workspace.projects.length,
+      }
+    : workspace;
+  if (!saveWorkspace(next)) {
+    throw new Error("Browser storage is unavailable.");
+  }
+  return {
+    projectRef: projectRef(project.title, id),
+    page: PAGE_PATH.test(page) ? page : "/",
+  };
 }
