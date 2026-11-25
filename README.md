@@ -12,16 +12,18 @@ PlayUI is a free, open-source AI playground in the spirit of v0, Lovable, Bolt, 
 
 PlayUI uses your React components so prototypes look and behave like your product. Integrations can include component examples, user flows, and preview settings.
 
-We want to support:
+Bundled with PlayUI:
 
 - [Ant Design](https://ant.design/)
-- [Gravity UI](https://gravity-ui.com/libraries/uikit)
 - [Kontur UI](https://github.com/skbkontur/retail-ui)
-- [Material UI (MUI)](https://mui.com/material-ui/)
-- [React Spectrum (Adobe)](https://react-spectrum.adobe.com/)
-- [shadcn/ui](https://ui.shadcn.com/)
 
-We want to support more design systems, including yours.
+Loaded on demand from [esm.sh](https://esm.sh/):
+
+- [Material UI (MUI)](https://mui.com/material-ui/)
+- [Chakra UI](https://chakra-ui.com/)
+
+Planned: Gravity UI, React Spectrum and shadcn/ui. Remote design systems need
+network access; bundled ones work offline.
 
 ## Try PlayUI
 
@@ -30,13 +32,15 @@ npm install
 npm run dev
 ```
 
-Open the local URL, choose a template, and describe the interface or flow you want to prototype.
+Open the local URL to see your projects, open a draft, and describe the
+interface or flow you want to prototype.
 
 ## Preview runtime
 
 PlayUI bundles TSX and CSS in the browser and runs the result in a sandboxed iframe.
-Use **+** to start a Kontur UI or Ant Design example. Describe a change in chat
-and test the result in **Preview**. The assistant can also add pages, switch the
+Use **+** to start a design-system example. Projects open as tabs, and closing
+the last tab returns to the projects screen. Describe a change in chat and test
+the result in **Preview**. The assistant can also add pages, switch the
 theme or preview size, and manage files through structured actions. Switch
 between desktop, tablet and mobile widths using the preview toolbar.
 

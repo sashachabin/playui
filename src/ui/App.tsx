@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import antdPackage from "antd/package.json";
-import starter from "../preview/starter.tsx?raw";
 import type { compilePreview } from "../preview/compile";
 
 import { ChatPanel } from "./components/ChatPanel";
@@ -9,10 +7,11 @@ import { FileBrowser } from "./components/FileBrowser";
 import { FileManagerDialog } from "./components/FileManagerDialog";
 import { FileSettingsDialog } from "./components/FileSettingsDialog";
 import { Header } from "./components/Header";
+import { HomeScreen } from "./components/HomeScreen";
 import { NewFileDialog } from "./components/NewFileDialog";
 import { NewPrototypeDialog } from "./components/NewPrototypeDialog";
 import { PreviewCanvas } from "./components/PreviewCanvas";
-import { DEFAULT_PAGES, initialFiles } from "./data";
+import { DEFAULT_PAGES, initialFiles, type ProjectTemplate } from "./data";
 import { applyEditorActions } from "./lib/actions";
 import { parseConfig } from "./lib/config";
 import {
@@ -39,6 +38,8 @@ export function App() {
   );
   const [projects, setProjects] = useState(workspace.projects);
   const [project, setProject] = useState(workspace.active);
+  const [openProjects, setOpenProjects] = useState([workspace.active]);
+  const [view, setView] = useState<"home" | "workspace">("home");
   const [projectPages, setProjectPages] = useState<Page[][]>(workspace.pages);
   const [storageError, setStorageError] = useState(false);
   useEffect(() => {
@@ -161,6 +162,8 @@ export function App() {
   }, []);
 
   function openProject(index: number, projectFiles: FileEntry[]) {
+    setOpenProjects((current) => (current.includes(index) ? current : [...current, index]));
+    setView("workspace");
     const projectPageList = projectPages[index] ?? DEFAULT_PAGES;
     let start = projectPageList[0]?.path ?? "/";
     try {
@@ -189,6 +192,18 @@ export function App() {
     setRevision((value) => value + 1);
   }
 
+  function closeProject(index: number) {
+    const remaining = openProjects.filter((candidate) => candidate !== index);
+    setOpenProjects(remaining);
+    if (index !== project) return;
+    if (remaining.length === 0) {
+      setView("home");
+      return;
+    }
+    const next = remaining[0]!;
+    openProject(next, projects[next]!);
+  }
+
   function updateFile(value: string | undefined) {
     setFiles((current) =>
       current.map((file) => (file.name === activeFile ? { ...file, value: value ?? "" } : file)),
@@ -200,33 +215,25 @@ export function App() {
     setRevision((value) => value + 1);
   }
 
-  function createProject(name: string, start: string, system: string) {
+  function createProject(template: ProjectTemplate) {
     const draft = initialFiles.map((file) => {
-      if (file.name === "playui.config.json") {
-        const base = JSON.parse(file.value);
-        return {
-          ...file,
-          value: JSON.stringify(
-            {
-              ...base,
-              name,
-              designSystem: system,
-              packages: system === "antd" ? { antd: antdPackage.version } : base.packages,
-              startRoute: start,
-              afterSubmit: "/done",
-            },
-            null,
-            2,
-          ),
-        };
-      }
-      if (file.name !== "App.tsx" || system !== "antd") return file;
+      if (file.name === "App.tsx") return { ...file, value: template.appSource };
+      if (file.name !== "playui.config.json") return file;
+      const base = JSON.parse(file.value);
       return {
         ...file,
-        value: starter
-          .replace("@skbkontur/react-ui", "antd")
-          .replaceAll(' width="100%"', "")
-          .replace('use="accent" type="submit"', 'type="primary" htmlType="submit" block'),
+        value: JSON.stringify(
+          {
+            ...base,
+            name: template.name,
+            designSystem: template.system,
+            packages: template.packages,
+            startRoute: template.route,
+            afterSubmit: "/done",
+          },
+          null,
+          2,
+        ),
       };
     });
     setProjects((current) => [...current, draft]);
@@ -373,14 +380,40 @@ export function App() {
   const projectPath = `file:///prototype/draft-${project}`;
   const declarations = useMemo(() => files.filter(({ name }) => name.endsWith(".d.ts")), [files]);
 
+  if (view === "home") {
+    return (
+      <>
+        <HomeScreen
+          projects={projects}
+          pages={projectPages}
+          activeProject={project}
+          onOpenProject={(index) => openProject(index, projects[index]!)}
+          onNewProject={() => setNewProjectOpen(true)}
+        />
+        {newProjectOpen && (
+          <NewPrototypeDialog
+            onClose={() => setNewProjectOpen(false)}
+            onCreate={(template) => {
+              createProject(template);
+              setNewProjectOpen(false);
+            }}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <main className="app">
       <Header
         projects={projects}
+        openProjects={openProjects}
         project={project}
         busy={busy}
         tab={tab}
+        onHome={() => setView("home")}
         onOpenProject={(index) => openProject(index, projects[index]!)}
+        onCloseProject={closeProject}
         onNewProject={() => setNewProjectOpen(true)}
         onSelectTab={setTab}
       />
@@ -447,7 +480,7 @@ export function App() {
         <NewPrototypeDialog
           onClose={() => setNewProjectOpen(false)}
           onCreate={(template) => {
-            createProject(template.name, template.route, template.system);
+            createProject(template);
             setNewProjectOpen(false);
           }}
         />
