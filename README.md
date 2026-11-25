@@ -103,3 +103,15 @@ npm run lint
 npm run format:check
 npm run build     # typecheck + production build
 ```
+
+## GitHub Pages
+
+Push to `main` to publish the browser app with GitHub Actions.
+In repository Settings → Pages, select **GitHub Actions** as the source.
+
+The editor and preview run on Pages. For AI, set the repository variable
+`VITE_AI_API_URL` to your API server's full `/api/generate` URL.
+The API server must allow requests from your Pages origin.
+Keep API keys on the server.
+
+The default site address is https://sashachabin.github.io/playui/.

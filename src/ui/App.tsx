@@ -244,7 +244,7 @@ export function App() {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
     try {
-      const response = await fetch("/api/generate", {
+      const response = await fetch(import.meta.env.VITE_AI_API_URL || "/api/generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
         signal: controller.signal,
