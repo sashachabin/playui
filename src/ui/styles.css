@@ -2310,14 +2310,25 @@ button {
     display: flex;
   }
 
-  .project-sidebar .rail-heading,
   .project-sidebar .files-section {
     display: none;
   }
 
-  .project-sidebar .pages-section {
-    display: block;
+  .project-sidebar .pages-section .rail-heading {
+    display: flex;
     flex: 0 0 auto;
+    margin: 0 4px 0 2px;
+  }
+
+  .project-sidebar .pages-section .rail-count {
+    display: none;
+  }
+
+  .project-sidebar .pages-section {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
     max-height: none;
   }
 
