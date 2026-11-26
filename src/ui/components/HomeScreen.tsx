@@ -26,6 +26,7 @@ type HomeScreenProps = {
   onDuplicateProject: (index: number) => void;
   onDeleteProjects: (indices: number[]) => void;
   onReorderProjects: (from: number, to: number) => void;
+  onGenerateProject: (prompt: string) => void;
 };
 
 type ProjectMenu = { index: number; x: number; y: number };
@@ -41,6 +42,7 @@ export function HomeScreen({
   onDuplicateProject,
   onDeleteProjects,
   onReorderProjects,
+  onGenerateProject,
 }: HomeScreenProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [menu, setMenu] = useState<ProjectMenu | null>(null);
@@ -50,6 +52,7 @@ export function HomeScreen({
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [anchor, setAnchor] = useState<number | null>(null);
+  const [generationPrompt, setGenerationPrompt] = useState("");
   const [dragging, setDragging] = useState<number | null>(null);
   const [dropProject, setDropProject] = useState<{ index: number; after: boolean } | null>(null);
   const dropProjectRef = useRef<{ index: number; after: boolean } | null>(null);
@@ -208,6 +211,14 @@ export function HomeScreen({
     window.addEventListener("pointercancel", finish);
   }
 
+  function submitGeneration(event: React.FormEvent) {
+    event.preventDefault();
+    const value = generationPrompt.trim();
+    if (!value) return;
+    onGenerateProject(value);
+    setGenerationPrompt("");
+  }
+
   function clearSelection() {
     setSelectMode(false);
     setSelected(new Set());
@@ -339,66 +350,120 @@ export function HomeScreen({
           </span>
         </div>
 
-        <div className={`project-grid ${selectMode ? "is-selecting" : ""}`}>
-          {projects.map((files, index) => {
-            const config = parseConfig(files);
-            const pageCount = pages[index]?.length ?? 0;
-            const title = projectTitle(files, index);
-            return (
-              <div
-                key={index}
-                data-project-index={index}
-                className={`project-card-wrap ${selected.has(index) ? "is-selected" : ""} ${
-                  dragging === index ? "dragging" : ""
-                } ${
-                  dropProject?.index === index
-                    ? dropProject.after
-                      ? "drop-after"
-                      : "drop-before"
-                    : ""
-                }`}
-                onPointerDown={(event) => beginProjectDrag(event, index)}
-                onContextMenu={(event) => openMenu(event, index)}
-              >
+        {projects.length === 0 ? (
+          <section className="home-generate" aria-labelledby="home-generate-title">
+            <h2 id="home-generate-title">What do you want to build?</h2>
+            <p>
+              Describe a screen or flow. PlayUI generates the first version, then you can refine it
+              in chat.
+            </p>
+            <form className="home-generate-form" onSubmit={submitGeneration}>
+              <textarea
+                aria-label="Describe the prototype to generate"
+                value={generationPrompt}
+                rows={3}
+                placeholder="A checkout flow for a SaaS product…"
+                onChange={(event) => setGenerationPrompt(event.target.value)}
+                onKeyDown={(event) => {
+                  if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                    event.preventDefault();
+                    event.currentTarget.form?.requestSubmit();
+                  }
+                }}
+              />
+              <div className="home-generate-bar">
+                <span>⌘↵ to generate</span>
                 <button
-                  type="button"
-                  className={`project-card ${index === activeProject ? "is-active" : ""}`}
-                  onClick={(event) => cardClick(event, index)}
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={!generationPrompt.trim()}
                 >
-                  <span className="project-select" aria-hidden="true">
-                    {selected.has(index) && <Check size={12} />}
-                  </span>
-                  <span className="project-thumb">
-                    <ProjectPreview files={files} pages={pages[index] ?? []} />
-                  </span>
-                  <span className="project-meta">
-                    <strong>{title}</strong>
-                    <span>
-                      {designSystemLabel(config?.designSystem)} · {pageCount}{" "}
-                      {pageCount === 1 ? "page" : "pages"}
-                    </span>
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="project-card-menu"
-                  aria-label={`Manage ${title}`}
-                  title="Manage prototype"
-                  onClick={(event) => openMenu(event, index)}
-                >
-                  <MoreHorizontal size={16} />
+                  Generate prototype
                 </button>
               </div>
-            );
-          })}
+            </form>
+            <div className="home-generate-examples" aria-label="Prompt ideas">
+              {[
+                "A checkout flow for a SaaS product",
+                "A team settings page",
+                "An onboarding wizard for a mobile app",
+              ].map((example) => (
+                <button
+                  key={example}
+                  type="button"
+                  className="home-generate-example"
+                  onClick={() => setGenerationPrompt(example)}
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="home-generate-template" onClick={onNewProject}>
+              Or start from a template
+            </button>
+          </section>
+        ) : (
+          <div className={`project-grid ${selectMode ? "is-selecting" : ""}`}>
+            {projects.map((files, index) => {
+              const config = parseConfig(files);
+              const pageCount = pages[index]?.length ?? 0;
+              const title = projectTitle(files, index);
+              return (
+                <div
+                  key={index}
+                  data-project-index={index}
+                  className={`project-card-wrap ${selected.has(index) ? "is-selected" : ""} ${
+                    dragging === index ? "dragging" : ""
+                  } ${
+                    dropProject?.index === index
+                      ? dropProject.after
+                        ? "drop-after"
+                        : "drop-before"
+                      : ""
+                  }`}
+                  onPointerDown={(event) => beginProjectDrag(event, index)}
+                  onContextMenu={(event) => openMenu(event, index)}
+                >
+                  <button
+                    type="button"
+                    className={`project-card ${index === activeProject ? "is-active" : ""}`}
+                    onClick={(event) => cardClick(event, index)}
+                  >
+                    <span className="project-select" aria-hidden="true">
+                      {selected.has(index) && <Check size={12} />}
+                    </span>
+                    <span className="project-thumb">
+                      <ProjectPreview files={files} pages={pages[index] ?? []} />
+                    </span>
+                    <span className="project-meta">
+                      <strong>{title}</strong>
+                      <span>
+                        {designSystemLabel(config?.designSystem)} · {pageCount}{" "}
+                        {pageCount === 1 ? "page" : "pages"}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="project-card-menu"
+                    aria-label={`Manage ${title}`}
+                    title="Manage prototype"
+                    onClick={(event) => openMenu(event, index)}
+                  >
+                    <MoreHorizontal size={16} />
+                  </button>
+                </div>
+              );
+            })}
 
-          <button type="button" className="project-card project-card--new" onClick={onNewProject}>
-            <span className="project-new-plus">
-              <Plus size={20} />
-            </span>
-            <span>New prototype</span>
-          </button>
-        </div>
+            <button type="button" className="project-card project-card--new" onClick={onNewProject}>
+              <span className="project-new-plus">
+                <Plus size={20} />
+              </span>
+              <span>New prototype</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {menu && menuProject && (

@@ -20,6 +20,7 @@ export function ChatPanel({
   onStop,
 }: ChatPanelProps) {
   const conversation = useRef<HTMLDivElement>(null);
+  const promptField = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (conversation.current) {
@@ -31,6 +32,32 @@ export function ChatPanel({
     <aside className="right-rail" aria-label="Assistant">
       <header className="assistant-heading">Chat</header>
       <div className="conversation" ref={conversation} role="log" aria-label="Conversation">
+        {messages.length === 0 && !busy && (
+          <div className="chat-empty">
+            <h2>Describe what you want to build</h2>
+            <p>PlayUI will generate the screen and update the preview.</p>
+            <div className="chat-suggestions" aria-label="Prompt ideas">
+              {[
+                "Create a checkout screen",
+                "Add a settings page",
+                "Improve the empty state",
+                "Make it mobile-friendly",
+              ].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  className="chat-suggestion"
+                  onClick={() => {
+                    onPromptChange(suggestion);
+                    promptField.current?.focus();
+                  }}
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {messages.map(({ role, text }, index) => (
           <div key={index} className={`bubble ${role}`}>
             {role === "error" && <AlertTriangle size={14} />}
@@ -50,6 +77,7 @@ export function ChatPanel({
       </div>
       <form className="composer" onSubmit={onSubmit}>
         <textarea
+          ref={promptField}
           aria-label="Describe a change"
           value={prompt}
           onChange={(event) => onPromptChange(event.target.value)}

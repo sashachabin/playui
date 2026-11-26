@@ -168,6 +168,7 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const generation = useRef<AbortController | null>(null);
   const stopped = useRef(false);
+  const pendingGeneration = useRef<string | null>(null);
   const [outlines, setOutlines] = useState(
     initialLocation.kind === "project" ? initialLocation.outlines : false,
   );
@@ -757,6 +758,38 @@ export function App() {
     openProject(projects.length, draft);
   }
 
+  function generateProject(request: string) {
+    const clean = request.replace(/\s+/g, " ").trim();
+    if (!clean) return;
+    const name = clean.length > 54 ? `${clean.slice(0, 53).trimEnd()}…` : clean;
+    const draft = initialFiles.map((file) => {
+      if (file.name !== "playui.config.json") return { ...file };
+      try {
+        const base = JSON.parse(file.value);
+        return {
+          ...file,
+          value: JSON.stringify(
+            {
+              ...base,
+              id: newProjectId(),
+              name,
+              startRoute: "/",
+            },
+            null,
+            2,
+          ),
+        };
+      } catch {
+        return { ...file };
+      }
+    });
+    pendingGeneration.current = clean;
+    setProjects((current) => [...current, draft]);
+    setProjectPages((current) => [...current, DEFAULT_PAGES]);
+    openProject(projects.length, draft);
+    setNewProjectOpen(false);
+  }
+
   async function shareProject(): Promise<boolean> {
     if (shareState === "copying") return false;
     setShareState("copying");
@@ -795,11 +828,9 @@ export function App() {
     }
   }
 
-  async function sendPrompt(event: React.FormEvent) {
-    event.preventDefault();
-    if (!prompt.trim() || busy) return;
+  async function generate(submittedPrompt: string) {
+    if (!submittedPrompt || busy) return;
     stopped.current = false;
-    const submittedPrompt = prompt.trim();
     setMessages((current) => [...current, { role: "user", text: submittedPrompt }]);
     setPrompt("");
     setBusy(true);
@@ -891,6 +922,19 @@ export function App() {
       setBusy(false);
     }
   }
+
+  function sendPrompt(event: React.FormEvent) {
+    event.preventDefault();
+    if (!prompt.trim() || busy) return;
+    void generate(prompt.trim());
+  }
+
+  useEffect(() => {
+    const next = pendingGeneration.current;
+    if (!next || view !== "workspace" || !activeProjectFiles || busy) return;
+    pendingGeneration.current = null;
+    void generate(next);
+  }, [view, activeProjectFiles, busy]);
 
   function stopGeneration() {
     stopped.current = true;
@@ -1067,6 +1111,7 @@ export function App() {
           onDuplicateProject={duplicateProject}
           onDeleteProjects={deleteProjects}
           onReorderProjects={reorderProjectCards}
+          onGenerateProject={generateProject}
         />
         {newProjectOpen && (
           <NewPrototypeDialog

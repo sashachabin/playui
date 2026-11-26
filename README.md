@@ -33,8 +33,9 @@ npm run dev
 ```
 
 Open the local URL to see your projects, open a draft, and describe the
-interface or flow you want to prototype. The card menu on Projects can open,
-rename, duplicate or delete a draft. Drag a card to reorder projects. Use
+interface or flow you want to prototype. With no drafts, describe what you want
+on Projects and PlayUI generates a first prototype from that prompt. The card menu
+can open, rename, duplicate or delete a draft. Drag a card to reorder projects. Use
 **Select**, ⌘-click or Shift-click to pick several drafts, then delete them
 together; **⌘A** selects all and **Esc** clears the selection. Drag pages in the
 left rail to reorder them, or duplicate a page from its menu. Press **?** for the
