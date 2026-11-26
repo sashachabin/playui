@@ -5,7 +5,7 @@ import { FileIcon } from "../FileIcon";
 import { fileKindLabel, formatFileSize } from "../lib/files";
 import type { FileEntry } from "../types";
 
-type FileManagerDialogProps = {
+export type FileManagerDialogProps = {
   files: FileEntry[];
   onClose: () => void;
   onCreate: () => void;

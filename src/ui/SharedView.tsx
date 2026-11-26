@@ -7,7 +7,7 @@ import { importSharedProject, type SharedProject } from "./lib/share";
 import { buildProjectHash, buildShareHash } from "./lib/url";
 import type { Device } from "./types";
 
-type SharedViewProps = {
+export type SharedViewProps = {
   project: SharedProject;
   payload: string;
   initialPage: string;

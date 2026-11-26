@@ -4,7 +4,7 @@ import { FileIcon } from "../FileIcon";
 import { fileKindLabel, normalizeFilePath } from "../lib/files";
 import type { FileEntry } from "../types";
 
-type NewFileDialogProps = {
+export type NewFileDialogProps = {
   files: FileEntry[];
   onClose: () => void;
   onCreate: (name: string) => void;

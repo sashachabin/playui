@@ -5,7 +5,7 @@ import { templates } from "../data";
 
 type Template = (typeof templates)[number];
 
-type NewPrototypeDialogProps = {
+export type NewPrototypeDialogProps = {
   onClose: () => void;
   onCreate: (template: Template) => void;
 };

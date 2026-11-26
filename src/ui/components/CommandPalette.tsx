@@ -10,7 +10,7 @@ export type Command = {
   run: () => void;
 };
 
-type CommandPaletteProps = {
+export type CommandPaletteProps = {
   commands: Command[];
   onClose: () => void;
 };

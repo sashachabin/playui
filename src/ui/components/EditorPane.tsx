@@ -27,7 +27,7 @@ function languageLabel(language: string): string {
   return "TypeScript";
 }
 
-type EditorPaneProps = {
+export type EditorPaneProps = {
   files: FileEntry[];
   activeFile: string;
   projectPath: string;

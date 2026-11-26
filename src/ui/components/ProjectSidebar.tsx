@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { FileIcon } from "../FileIcon";
 import type { FileEntry, Page } from "../types";
 
-type ProjectSidebarProps = {
+export type ProjectSidebarProps = {
   pages: Page[];
   route: string;
   startRoute: string;

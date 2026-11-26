@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { AlertTriangle, ArrowUp, Square } from "lucide-react";
 import type { Message } from "../types";
 
-type ChatPanelProps = {
+export type ChatPanelProps = {
   messages: Message[];
   busy: boolean;
   prompt: string;

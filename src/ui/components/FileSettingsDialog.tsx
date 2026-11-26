@@ -5,7 +5,7 @@ import { FileIcon } from "../FileIcon";
 import { PROTECTED_FILES, fileKindLabel, formatFileSize, normalizeFilePath } from "../lib/files";
 import type { FileEntry } from "../types";
 
-type FileSettingsDialogProps = {
+export type FileSettingsDialogProps = {
   file: FileEntry;
   files: FileEntry[];
   onClose: () => void;

@@ -25,6 +25,23 @@ Loaded on demand from [esm.sh](https://esm.sh/):
 Planned: Gravity UI, React Spectrum and shadcn/ui. Remote design systems need
 network access; bundled ones work offline.
 
+## Two UI layers
+
+PlayUI ships two interchangeable interfaces over the same workspace, drafts and
+preview runtime:
+
+- **Classic** (default) — the original interface.
+- **Kontur UI** — the same screens built with
+  [`@skbkontur/react-ui`](https://github.com/skbkontur/retail-ui) components
+  (`Button`, `Input`, `Textarea`, `Modal`, `DropdownMenu`, `Tabs`, `Tooltip`)
+  and coloured with [`@skbkontur/colors`](https://www.npmjs.com/package/@skbkontur/colors)
+  tokens (`brand-green` / `accent-gray`).
+
+Open any PlayUI URL with `?ui=kontur` to use the Kontur layer, for example
+`http://localhost:5173/?ui=kontur`. The query string survives project
+navigation; the Kontur home header has a **Classic UI** link back. Both layers
+share the same localStorage drafts, so switching never duplicates your work.
+
 ## Try PlayUI
 
 ```sh

@@ -24,7 +24,7 @@ const DEVICES = [
   ["mobile", "Mobile", Smartphone],
 ] as const;
 
-type PreviewCanvasProps = {
+export type PreviewCanvasProps = {
   preview: string;
   device: Device;
   isDark: boolean;

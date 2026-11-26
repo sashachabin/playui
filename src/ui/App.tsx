@@ -1,18 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { compilePreview } from "../preview/compile";
 
-import { ChatPanel } from "./components/ChatPanel";
-import { CommandPalette, type Command } from "./components/CommandPalette";
-import { EditorPane } from "./components/EditorPane";
-import { FileManagerDialog } from "./components/FileManagerDialog";
-import { FileSettingsDialog } from "./components/FileSettingsDialog";
-import { Header } from "./components/Header";
-import { HomeScreen } from "./components/HomeScreen";
-import { NewFileDialog } from "./components/NewFileDialog";
-import { NewPrototypeDialog } from "./components/NewPrototypeDialog";
-import { PreviewCanvas } from "./components/PreviewCanvas";
-import { ShortcutsDialog } from "./components/ShortcutsDialog";
-import { ProjectSidebar } from "./components/ProjectSidebar";
+import { type Command } from "./components/CommandPalette";
 import { DEFAULT_PAGES, initialFiles, type ProjectTemplate } from "./data";
 import { applyEditorActions } from "./lib/actions";
 import {
@@ -34,6 +23,7 @@ import {
 } from "./lib/files";
 import { PAGE_PATH, pathFromLabel, rewriteRouteLinks } from "./lib/pages";
 import { encodeSnapshot } from "./lib/share";
+import { dialogIsOpen } from "./lib/dialogs";
 import {
   buildProjectHash,
   buildShareHash,
@@ -42,12 +32,15 @@ import {
   projectRef,
 } from "./lib/url";
 import type { Device, EditorAction, FileEntry, Message, Page, Tab } from "./types";
+import { getUiKit, isKonturUi } from "./ui-kit";
 import { loadWorkspace, saveWorkspace } from "./workspace";
 
 const AI_TIMEOUT_MS = 240_000;
 const EMPTY_FILES: FileEntry[] = [];
 const EMPTY_PAGES: Page[] = [];
 const HISTORY_LIMIT = 50;
+const UI = getUiKit();
+const KONTUR = isKonturUi();
 
 type ProjectSnapshot = { files: FileEntry[]; pages: Page[]; route: string };
 
@@ -275,7 +268,12 @@ export function App() {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "k") return;
-      if (document.querySelector(".modal")) return;
+      if (document.querySelector(".k-palette-modal")) {
+        event.preventDefault();
+        setPaletteOpen(false);
+        return;
+      }
+      if (dialogIsOpen()) return;
       event.preventDefault();
       setPaletteOpen((current) => !current);
     }
@@ -287,7 +285,7 @@ export function App() {
     function onKeyDown(event: KeyboardEvent) {
       const target = event.target instanceof Element ? event.target : null;
       if (target?.closest("input, textarea, select, [contenteditable=true]")) return;
-      if (document.querySelector(".modal")) return;
+      if (dialogIsOpen()) return;
       const modifier = event.metaKey || event.ctrlKey;
       if (
         view === "workspace" &&
@@ -1223,7 +1221,7 @@ export function App() {
   if (view === "home" || !activeProjectFiles) {
     return (
       <>
-        <HomeScreen
+        <UI.HomeScreen
           projects={projects}
           pages={projectPages}
           activeProject={project}
@@ -1237,7 +1235,7 @@ export function App() {
           onGenerateProject={generateProject}
         />
         {newProjectOpen && (
-          <NewPrototypeDialog
+          <UI.NewPrototypeDialog
             onClose={() => setNewProjectOpen(false)}
             onCreate={(template) => {
               createProject(template);
@@ -1246,16 +1244,16 @@ export function App() {
           />
         )}
         {paletteOpen && (
-          <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />
+          <UI.CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />
         )}
-        {shortcutsOpen && <ShortcutsDialog onClose={() => setShortcutsOpen(false)} />}
+        {shortcutsOpen && <UI.ShortcutsDialog onClose={() => setShortcutsOpen(false)} />}
       </>
     );
   }
 
   return (
-    <main className="app">
-      <Header
+    <main className={`app ${KONTUR ? "ui-kontur" : ""}`}>
+      <UI.Header
         projects={projects}
         openProjects={openProjects}
         project={project}
@@ -1282,7 +1280,7 @@ export function App() {
       )}
 
       <div className={`app-body ${tab === "code" ? "is-coding" : "is-previewing"}`}>
-        <ProjectSidebar
+        <UI.ProjectSidebar
           pages={pages}
           route={route}
           startRoute={startRoute}
@@ -1304,7 +1302,7 @@ export function App() {
 
         <section className="workspace">
           {tab === "preview" && (
-            <PreviewCanvas
+            <UI.PreviewCanvas
               preview={preview ?? ""}
               device={device}
               isDark={isDark}
@@ -1335,7 +1333,7 @@ export function App() {
             />
           )}
           <div className={`editor-host ${tab === "code" ? "" : "is-background"}`}>
-            <EditorPane
+            <UI.EditorPane
               files={files}
               activeFile={activeFile}
               projectPath={projectPath}
@@ -1347,7 +1345,7 @@ export function App() {
           </div>
         </section>
 
-        <ChatPanel
+        <UI.ChatPanel
           messages={messages}
           busy={busy}
           prompt={prompt}
@@ -1369,7 +1367,7 @@ export function App() {
       )}
 
       {newProjectOpen && (
-        <NewPrototypeDialog
+        <UI.NewPrototypeDialog
           onClose={() => setNewProjectOpen(false)}
           onCreate={(template) => {
             createProject(template);
@@ -1379,7 +1377,7 @@ export function App() {
       )}
 
       {filesOpen && (
-        <FileManagerDialog
+        <UI.FileManagerDialog
           files={files}
           onClose={() => setFilesOpen(false)}
           onCreate={() => {
@@ -1395,11 +1393,15 @@ export function App() {
       )}
 
       {newFileOpen && (
-        <NewFileDialog files={files} onClose={() => setNewFileOpen(false)} onCreate={createFile} />
+        <UI.NewFileDialog
+          files={files}
+          onClose={() => setNewFileOpen(false)}
+          onCreate={createFile}
+        />
       )}
 
       {fileSettingsFile && (
-        <FileSettingsDialog
+        <UI.FileSettingsDialog
           key={fileSettingsFile.name}
           file={fileSettingsFile}
           files={files}
@@ -1409,7 +1411,9 @@ export function App() {
         />
       )}
 
-      {paletteOpen && <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />}
+      {paletteOpen && (
+        <UI.CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />
+      )}
     </main>
   );
 }

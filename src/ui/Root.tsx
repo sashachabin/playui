@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { App } from "./App";
-import { SharedView } from "./SharedView";
+import { getUiKit, isKonturUi } from "./ui-kit";
 import { decodeSnapshot, type SharedProject } from "./lib/share";
 import { parseLocation } from "./lib/url";
 import type { Device } from "./types";
+
+const UI = getUiKit();
+const KONTUR = isKonturUi();
 
 type ShareState =
   | { status: "loading" }
@@ -68,7 +71,7 @@ function SharedLoader({ hash }: { hash: string }) {
 
   if (state.status === "loading") {
     return (
-      <main className="share-status">
+      <main className={`share-status ${KONTUR ? "ui-kontur" : ""}`}>
         <span className="brand-name">PlayUI</span>
         <p>Opening prototype…</p>
       </main>
@@ -77,7 +80,7 @@ function SharedLoader({ hash }: { hash: string }) {
 
   if (state.status === "error") {
     return (
-      <main className="share-status">
+      <main className={`share-status ${KONTUR ? "ui-kontur" : ""}`}>
         <span className="brand-name">PlayUI</span>
         <h1>Cannot open this prototype</h1>
         <p>{state.message}</p>
@@ -89,7 +92,7 @@ function SharedLoader({ hash }: { hash: string }) {
   }
 
   return (
-    <SharedView
+    <UI.SharedView
       project={state.project}
       payload={state.payload}
       initialPage={state.page}

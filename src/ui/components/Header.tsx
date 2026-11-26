@@ -9,7 +9,7 @@ import {
 import { projectTitle } from "../lib/config";
 import type { FileEntry, Tab } from "../types";
 
-type HeaderProps = {
+export type HeaderProps = {
   projects: FileEntry[][];
   openProjects: number[];
   project: number;

@@ -15,7 +15,7 @@ import { ProjectPreview } from "../ProjectPreview";
 import { designSystemLabel, parseConfig, projectTitle } from "../lib/config";
 import type { FileEntry, Page } from "../types";
 
-type HomeScreenProps = {
+export type HomeScreenProps = {
   projects: FileEntry[][];
   pages: Page[][];
   activeProject: number;
