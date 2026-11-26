@@ -33,7 +33,8 @@ npm run dev
 ```
 
 Open the local URL to see your projects, open a draft, and describe the
-interface or flow you want to prototype.
+interface or flow you want to prototype. The card menu on Projects can open,
+rename, duplicate or delete a draft.
 
 ## Preview runtime
 

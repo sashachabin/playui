@@ -453,6 +453,55 @@ export function App() {
     );
   }
 
+  function duplicateProject(index: number) {
+    const source = projects[index];
+    if (!source) return;
+    const name = `${projectTitle(source, index)} copy`;
+    const files = writeConfig(
+      source.map((file) => ({ ...file })),
+      { id: newProjectId(), name },
+    );
+    const pages = (projectPages[index] ?? DEFAULT_PAGES).map((page) => ({ ...page }));
+    setProjects((current) => [...current, files]);
+    setProjectPages((current) => [...current, pages]);
+  }
+
+  function deleteProject(index: number) {
+    if (projects.length <= 1) return;
+    const nextProjects = projects.filter((_, projectIndex) => projectIndex !== index);
+    const nextPages = projectPages.filter((_, projectIndex) => projectIndex !== index);
+    const nextProject =
+      index < project
+        ? project - 1
+        : index === project
+          ? Math.min(index, nextProjects.length - 1)
+          : project;
+    setProjects(nextProjects);
+    setProjectPages(nextPages);
+    setOpenProjects((current) =>
+      current
+        .filter((candidate) => candidate !== index)
+        .map((candidate) => (candidate > index ? candidate - 1 : candidate)),
+    );
+    if (nextProject !== project) setProject(nextProject);
+    const views: Record<number, ProjectViewState> = {};
+    for (const [key, value] of Object.entries(projectViews.current)) {
+      const current = Number(key);
+      if (current === index) continue;
+      views[current > index ? current - 1 : current] = value;
+    }
+    projectViews.current = views;
+    setProjectMessages((current) => {
+      const next: Record<number, Message[]> = {};
+      for (const [key, value] of Object.entries(current)) {
+        const currentIndex = Number(key);
+        if (currentIndex === index) continue;
+        next[currentIndex > index ? currentIndex - 1 : currentIndex] = value;
+      }
+      return next;
+    });
+  }
+
   function selectPage(path: string) {
     navigateRoute(path);
     setTab("preview");
@@ -858,6 +907,9 @@ export function App() {
           onOpenProject={(index) => openProject(index, projects[index]!)}
           onNewProject={() => setNewProjectOpen(true)}
           onSearch={() => setPaletteOpen(true)}
+          onRenameProject={renameProject}
+          onDuplicateProject={duplicateProject}
+          onDeleteProject={deleteProject}
         />
         {newProjectOpen && (
           <NewPrototypeDialog
