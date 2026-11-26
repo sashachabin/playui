@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { Dialog } from "../Dialog";
+import { DesignSystemIcon } from "../DesignSystemIcon";
 import { templates } from "../data";
 
 type Template = (typeof templates)[number];
@@ -21,11 +22,7 @@ export function NewPrototypeDialog({ onClose, onCreate }: NewPrototypeDialogProp
             autoFocus={index === 0}
             onClick={() => onCreate(template)}
           >
-            <span className="template-preview" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </span>
+            <DesignSystemIcon system={template.system} />
             <span className="template-body">
               <span className="template-title">{template.name}</span>
               <span className="template-description">{template.description}</span>
