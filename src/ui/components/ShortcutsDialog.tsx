@@ -15,6 +15,8 @@ const GROUPS = [
       ["V", "Preview"],
       ["C", "Code"],
       ["R", "Reload preview"],
+      ["⌘ Z", "Undo"],
+      ["⇧ ⌘ Z", "Redo"],
     ],
   },
   {

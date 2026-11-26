@@ -39,7 +39,7 @@ can open, rename, duplicate or delete a draft. Drag a card to reorder projects. 
 **Select**, ⌘-click or Shift-click to pick several drafts, then delete them
 together; **⌘A** selects all and **Esc** clears the selection. Drag pages in the
 left rail to reorder them, or duplicate a page from its menu. Press **?** for the
-full shortcut list.
+full shortcut list. Use **⌘Z / ⇧⌘Z** to undo or redo project edits.
 
 ## Preview runtime
 

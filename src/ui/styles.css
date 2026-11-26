@@ -3455,3 +3455,15 @@ body:has(.command-backdrop) .selection-bar {
     padding: 0;
   }
 }
+
+@media (max-width: 560px) {
+  .device-switch button {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .device-label {
+    display: none;
+  }
+}

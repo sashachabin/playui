@@ -7,10 +7,12 @@ import {
   Link2,
   Monitor,
   Moon,
+  Redo2,
   RotateCcw,
   Smartphone,
   Sun,
   Tablet,
+  Undo2,
 } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { PAGE_PATH } from "../lib/pages";
@@ -38,6 +40,10 @@ type PreviewCanvasProps = {
   onForward?: () => void;
   onNavigate?: (route: string) => void;
   onCopyLink?: () => Promise<boolean>;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
   onToggleTheme?: () => void;
   routes?: { path: string; label: string }[];
   onDevice: (device: Device) => void;
@@ -61,6 +67,10 @@ export function PreviewCanvas({
   onForward,
   onNavigate,
   onCopyLink,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
   onToggleTheme,
   routes = [],
   onDevice,
@@ -284,17 +294,44 @@ export function PreviewCanvas({
       </div>
 
       <div className="canvas-toolbar">
+        {onUndo && onRedo && (
+          <>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="Undo"
+              title="Undo (⌘Z)"
+              disabled={!canUndo}
+              onClick={onUndo}
+            >
+              <Undo2 size={15} />
+            </button>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="Redo"
+              title="Redo (⇧⌘Z)"
+              disabled={!canRedo}
+              onClick={onRedo}
+            >
+              <Redo2 size={15} />
+            </button>
+            <span className="toolbar-sep" />
+          </>
+        )}
         <div className="device-switch" role="group" aria-label="Preview size">
           {DEVICES.map(([value, label, Icon]) => (
             <button
               key={value}
               type="button"
               className={device === value ? "active" : ""}
+              aria-label={label}
               aria-pressed={device === value}
+              title={label}
               onClick={() => onDevice(value)}
             >
               <Icon size={14} />
-              {label}
+              <span className="device-label">{label}</span>
             </button>
           ))}
         </div>

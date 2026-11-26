@@ -47,6 +47,9 @@ import { loadWorkspace, saveWorkspace } from "./workspace";
 const AI_TIMEOUT_MS = 240_000;
 const EMPTY_FILES: FileEntry[] = [];
 const EMPTY_PAGES: Page[] = [];
+const HISTORY_LIMIT = 50;
+
+type ProjectSnapshot = { files: FileEntry[]; pages: Page[]; route: string };
 
 type ProjectViewState = {
   activeFile: string;
@@ -130,6 +133,17 @@ export function App() {
   filesRef.current = files;
   pagesRef.current = pages;
 
+  const historyKey = `${project}:${projectId(files) ?? "none"}`;
+  const snapshotRef = useRef<ProjectSnapshot>({ files, pages, route: initialRoute });
+  const projectHistory = useRef<{ past: ProjectSnapshot[]; future: ProjectSnapshot[] }>({
+    past: [],
+    future: [],
+  });
+  const lastCommitted = useRef<ProjectSnapshot | null>(null);
+  const historyProject = useRef<string | null>(null);
+  const applyingHistory = useRef(false);
+  const [, bumpHistory] = useState(0);
+
   function setFiles(update: (current: FileEntry[]) => FileEntry[]) {
     setProjects((current) =>
       current.map((projectFiles, index) =>
@@ -145,6 +159,77 @@ export function App() {
     );
   }
 
+  useEffect(() => {
+    if (!activeProjectFiles) {
+      projectHistory.current = { past: [], future: [] };
+      lastCommitted.current = null;
+      historyProject.current = null;
+      return;
+    }
+    if (historyProject.current !== historyKey) {
+      historyProject.current = historyKey;
+      projectHistory.current = { past: [], future: [] };
+      lastCommitted.current = snapshotRef.current;
+      bumpHistory((value) => value + 1);
+      return;
+    }
+    if (applyingHistory.current) {
+      applyingHistory.current = false;
+      lastCommitted.current = snapshotRef.current;
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      const current = snapshotRef.current;
+      const previous = lastCommitted.current;
+      if (!previous || (previous.files === current.files && previous.pages === current.pages)) {
+        return;
+      }
+      projectHistory.current.past.push(previous);
+      if (projectHistory.current.past.length > HISTORY_LIMIT) projectHistory.current.past.shift();
+      projectHistory.current.future = [];
+      lastCommitted.current = current;
+      bumpHistory((value) => value + 1);
+    }, 450);
+    return () => window.clearTimeout(timeout);
+  }, [activeProjectFiles, historyKey, pages]);
+
+  function applySnapshot(snapshot: ProjectSnapshot) {
+    applyingHistory.current = true;
+    lastCommitted.current = snapshot;
+    setFiles(() => snapshot.files);
+    setPages(() => snapshot.pages);
+    const nextRoute = snapshot.pages.some((page) => page.path === snapshot.route)
+      ? snapshot.route
+      : (snapshot.pages[0]?.path ?? "/");
+    navigateRoute(nextRoute, "replace");
+    bumpHistory((value) => value + 1);
+  }
+
+  function undoProject() {
+    if (!activeProjectFiles || busy) return;
+    const current = snapshotRef.current;
+    const history = projectHistory.current;
+    const committed = lastCommitted.current;
+    if (committed && (committed.files !== current.files || committed.pages !== current.pages)) {
+      history.future.push(current);
+      applySnapshot(committed);
+      return;
+    }
+    const previous = history.past.pop();
+    if (!previous) return;
+    history.future.push(current);
+    applySnapshot(previous);
+  }
+
+  function redoProject() {
+    if (!activeProjectFiles || busy) return;
+    const next = projectHistory.current.future.pop();
+    if (!next) return;
+    projectHistory.current.past.push(snapshotRef.current);
+    if (projectHistory.current.past.length > HISTORY_LIMIT) projectHistory.current.past.shift();
+    applySnapshot(next);
+  }
+
   const [activeFile, setActiveFile] = useState(initialFile);
   const [device, setDevice] = useState<Device>(
     initialLocation.kind === "project" ? initialLocation.device : "desktop",
@@ -153,6 +238,7 @@ export function App() {
   const [route, setRoute] = useState(initialRoute);
   const routeRef = useRef(initialRoute);
   routeRef.current = route;
+  snapshotRef.current = { files, pages, route };
   const routeHistory = useRef({ entries: [initialRoute], index: 0 });
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
@@ -202,6 +288,17 @@ export function App() {
       const target = event.target instanceof Element ? event.target : null;
       if (target?.closest("input, textarea, select, [contenteditable=true]")) return;
       if (document.querySelector(".modal")) return;
+      const modifier = event.metaKey || event.ctrlKey;
+      if (
+        view === "workspace" &&
+        modifier &&
+        (event.key.toLowerCase() === "z" || event.key.toLowerCase() === "y")
+      ) {
+        event.preventDefault();
+        if (event.key.toLowerCase() === "y" || event.shiftKey) redoProject();
+        else undoProject();
+        return;
+      }
       if (event.key === "?") {
         event.preventDefault();
         setShortcutsOpen(true);
@@ -221,7 +318,7 @@ export function App() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [view]);
+  }, [view, busy, activeProjectFiles, pages]);
 
   useEffect(() => {
     if (shareState === "idle") return;
@@ -988,6 +1085,14 @@ export function App() {
   const projectPath = `file:///prototype/draft-${project}`;
   const declarations = useMemo(() => files.filter(({ name }) => name.endsWith(".d.ts")), [files]);
 
+  const dirtyHistory =
+    !!lastCommitted.current &&
+    !!activeProjectFiles &&
+    (lastCommitted.current.files !== files || lastCommitted.current.pages !== pages);
+  const canUndo =
+    !!activeProjectFiles && !busy && (dirtyHistory || projectHistory.current.past.length > 0);
+  const canRedo = !!activeProjectFiles && !busy && projectHistory.current.future.length > 0;
+
   const commands: Command[] = [];
   if (view === "workspace") {
     commands.push(
@@ -1015,6 +1120,24 @@ export function App() {
       },
       { id: "reload", label: "Reload preview", group: "View", run: reloadPreview },
     );
+    if (canUndo) {
+      commands.push({
+        id: "undo",
+        label: "Undo",
+        group: "Edit",
+        hint: "⌘Z",
+        run: undoProject,
+      });
+    }
+    if (canRedo) {
+      commands.push({
+        id: "redo",
+        label: "Redo",
+        group: "Edit",
+        hint: "⇧⌘Z",
+        run: redoProject,
+      });
+    }
     for (const [value, label] of [
       ["desktop", "Desktop"],
       ["tablet", "Tablet"],
@@ -1198,6 +1321,10 @@ export function App() {
               onForward={goForward}
               onNavigate={navigateRoute}
               onCopyLink={shareProject}
+              onUndo={undoProject}
+              onRedo={redoProject}
+              canUndo={canUndo}
+              canRedo={canRedo}
               onToggleTheme={toggleTheme}
               routes={pages}
               onReload={reloadPreview}
