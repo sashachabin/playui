@@ -822,7 +822,7 @@ button:disabled {
 
   .app-header {
     gap: 8px;
-    padding-inline: 10px;
+    padding-inline: 12px;
   }
 
   .app-body {
@@ -882,10 +882,6 @@ button:disabled {
   .app-header {
     gap: 6px;
     padding-inline: 8px;
-  }
-
-  .app-header .brand {
-    display: none;
   }
 
   .file-tabs-wrap {
@@ -1486,10 +1482,10 @@ button {
 
 .home-header {
   display: flex;
-  flex: 0 0 56px;
+  flex: 0 0 52px;
   align-items: center;
   gap: 14px;
-  padding: 0 20px;
+  padding: 0 16px;
   border-bottom: 1px solid var(--border);
   background: var(--panel);
 }
@@ -1851,6 +1847,10 @@ button {
 }
 
 @media (max-width: 560px) {
+  .home-header {
+    padding-inline: 8px;
+  }
+
   .project-grid {
     grid-template-columns: minmax(0, 1fr);
   }
