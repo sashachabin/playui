@@ -1,4 +1,4 @@
-import { FolderOpen, Home, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { File, FolderOpen, Home, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { FileIcon } from "../FileIcon";
 import type { FileEntry, Page } from "../types";
@@ -160,7 +160,7 @@ export function ProjectSidebar({
           </span>
         </div>
         <div className="page-list">
-          {pages.map((page, index) => {
+          {pages.map((page) => {
             const active = page.path === route;
             const isEditing = editing === page.path;
             return (
@@ -206,8 +206,8 @@ export function ProjectSidebar({
                       beginRename(page);
                     }}
                   >
-                    <span className="page-index" aria-hidden="true">
-                      {String(index + 1).padStart(2, "0")}
+                    <span className="page-item-icon" aria-hidden="true">
+                      <File size={13} />
                     </span>
                     <span className="page-item-text">
                       <span className="page-item-label">

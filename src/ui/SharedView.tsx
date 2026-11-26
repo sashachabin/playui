@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { compilePreview } from "../preview/compile";
-import { Brand } from "./Brand";
 import { PreviewCanvas } from "./components/PreviewCanvas";
 import { parseConfig } from "./lib/config";
 import { PAGE_PATH } from "./lib/pages";
@@ -127,7 +126,7 @@ export function SharedView({
           title="Open this project in PlayUI"
           onClick={openInPlayUI}
         >
-          <Brand />
+          <span className="brand-name">PlayUI</span>
         </button>
         <span className="shared-divider" aria-hidden="true" />
         <span className="shared-title">{project.title}</span>

@@ -6,7 +6,6 @@ import {
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { Brand } from "../Brand";
 import { projectTitle } from "../lib/config";
 import type { FileEntry, Tab } from "../types";
 
@@ -349,12 +348,12 @@ export function Header({
         title="Projects"
         onClick={onHome}
       >
-        <Brand />
+        <span className="brand-name">PlayUI</span>
       </button>
 
       <div className="file-tabs-wrap">
         <div className="file-tabs" ref={tabsRef} role="tablist" aria-label="Open prototypes">
-          {openProjects.map((index, position) => {
+          {openProjects.map((index) => {
             const files = projects[index];
             if (!files) return null;
             const active = index === project;
@@ -438,9 +437,6 @@ export function Header({
                     disabled={busy}
                     title={title}
                   >
-                    <span className="file-tab-index" aria-hidden="true">
-                      {String(position + 1).padStart(2, "0")}
-                    </span>
                     <span className="file-tab-name">{title}</span>
                   </button>
                 )}

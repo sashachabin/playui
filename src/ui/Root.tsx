@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { App } from "./App";
-import { Brand } from "./Brand";
 import { SharedView } from "./SharedView";
 import { decodeSnapshot, type SharedProject } from "./lib/share";
 import { parseLocation } from "./lib/url";
@@ -70,7 +69,7 @@ function SharedLoader({ hash }: { hash: string }) {
   if (state.status === "loading") {
     return (
       <main className="share-status">
-        <Brand />
+        <span className="brand-name">PlayUI</span>
         <p>Opening prototype…</p>
       </main>
     );
@@ -79,7 +78,7 @@ function SharedLoader({ hash }: { hash: string }) {
   if (state.status === "error") {
     return (
       <main className="share-status">
-        <Brand />
+        <span className="brand-name">PlayUI</span>
         <h1>Cannot open this prototype</h1>
         <p>{state.message}</p>
         <a className="shared-back" href="#/">

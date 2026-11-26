@@ -1,5 +1,4 @@
 import { Plus } from "lucide-react";
-import { Brand } from "../Brand";
 import { designSystemLabel, parseConfig, projectTitle } from "../lib/config";
 import type { FileEntry, Page } from "../types";
 
@@ -22,7 +21,7 @@ export function HomeScreen({
     <main className="home">
       <header className="home-header">
         <div className="brand" aria-label="PlayUI">
-          <Brand />
+          <span className="brand-name">PlayUI</span>
         </div>
         <span className="home-crumb">Projects</span>
         <span className="home-spacer" />
@@ -55,7 +54,6 @@ export function HomeScreen({
                 onClick={() => onOpenProject(index)}
               >
                 <span className="project-thumb" aria-hidden="true">
-                  <span className="project-index">{String(index + 1).padStart(2, "0")}</span>
                   <span className="project-frame">
                     <span className="project-frame-title">{projectTitle(files, index)}</span>
                     <span className="project-frame-line" />
