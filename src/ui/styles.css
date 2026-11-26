@@ -2588,3 +2588,151 @@ button {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* ---------- Preview address bar ---------- */
+
+.canvas-addressbar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  margin: 12px 14px 0;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(24 24 27 / 3%);
+}
+
+.address-nav {
+  display: flex;
+  gap: 1px;
+}
+
+.address-nav button,
+.address-action {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--muted);
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+}
+
+.address-nav button:hover:not(:disabled),
+.address-action:hover {
+  color: var(--text);
+  background: var(--panel-2);
+}
+
+.address-nav button:disabled {
+  opacity: 0.3;
+}
+
+.address-action.copied {
+  color: #137a4d;
+}
+
+.address-field {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: var(--panel-2);
+}
+
+.address-field:focus-within {
+  border-color: var(--border-strong);
+  background: #ffffff;
+}
+
+.address-field.invalid {
+  border-color: var(--danger);
+  background: #fff4f2;
+}
+
+.address-origin {
+  flex: 0 0 auto;
+  margin-right: 6px;
+  padding-right: 6px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  border-right: 1px solid var(--border);
+}
+
+.address-field input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  border: 0;
+  outline: none;
+  background: transparent;
+}
+
+.canvas-error {
+  top: 58px;
+}
+
+.toolbar-present {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  color: var(--text);
+  font-size: 11.5px;
+  font-weight: 500;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+}
+
+.toolbar-present:hover {
+  background: var(--panel-2);
+}
+
+.canvas:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  background: var(--canvas);
+}
+
+.canvas:fullscreen .device-stage {
+  padding: 28px 34px 88px;
+}
+
+.canvas:fullscreen .canvas-toolbar {
+  bottom: 24px;
+}
+
+@media (max-width: 860px) {
+  .canvas-addressbar {
+    margin: 8px 10px 0;
+  }
+
+  .address-origin {
+    display: none;
+  }
+
+  .device-stage {
+    padding-top: 18px;
+  }
+}
+
+@media (max-width: 560px) {
+  .toolbar-present span {
+    display: none;
+  }
+}

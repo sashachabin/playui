@@ -133,6 +133,11 @@ export function App() {
   );
   const [revision, setRevision] = useState(0);
   const [route, setRoute] = useState(initialRoute);
+  const routeRef = useRef(initialRoute);
+  routeRef.current = route;
+  const routeHistory = useRef({ entries: [initialRoute], index: 0 });
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
   const [dark, setDark] = useState<boolean | undefined>(
     initialLocation.kind === "project" && initialLocation.theme
       ? initialLocation.theme === "dark"
@@ -256,12 +261,67 @@ export function App() {
     function navigate(event: MessageEvent) {
       if (event.source !== frame.current?.contentWindow) return;
       const path: unknown = event.data?.route;
-      if (typeof path === "string" && PAGE_PATH.test(path)) setRoute(path);
+      if (typeof path === "string" && PAGE_PATH.test(path)) navigateRoute(path);
       if (typeof event.data?.error === "string") setRuntimeError(event.data.error);
     }
     window.addEventListener("message", navigate);
     return () => window.removeEventListener("message", navigate);
   }, []);
+
+  function syncHistoryFlags() {
+    const history = routeHistory.current;
+    setCanGoBack(history.index > 0);
+    setCanGoForward(history.index < history.entries.length - 1);
+  }
+
+  function navigateRoute(path: string, mode: "push" | "replace" | "reset" = "push") {
+    if (!PAGE_PATH.test(path)) return false;
+    const history = routeHistory.current;
+    if (mode === "reset") {
+      history.entries = [path];
+      history.index = 0;
+    } else if (mode === "replace") {
+      history.entries[history.index] = path;
+    } else if (path !== routeRef.current) {
+      history.entries = history.entries.slice(0, history.index + 1);
+      history.entries.push(path);
+      history.index = history.entries.length - 1;
+    }
+    routeRef.current = path;
+    setRoute(path);
+    syncHistoryFlags();
+    return true;
+  }
+
+  function replaceHistoryPath(from: string, to: string) {
+    const history = routeHistory.current;
+    history.entries = history.entries.map((entry) => (entry === from ? to : entry));
+    if (routeRef.current === from) {
+      routeRef.current = to;
+      setRoute(to);
+    }
+    syncHistoryFlags();
+  }
+
+  function goBack() {
+    const history = routeHistory.current;
+    if (history.index <= 0) return;
+    history.index -= 1;
+    const path = history.entries[history.index]!;
+    routeRef.current = path;
+    setRoute(path);
+    syncHistoryFlags();
+  }
+
+  function goForward() {
+    const history = routeHistory.current;
+    if (history.index >= history.entries.length - 1) return;
+    history.index += 1;
+    const path = history.entries[history.index]!;
+    routeRef.current = path;
+    setRoute(path);
+    syncHistoryFlags();
+  }
 
   function saveProjectView() {
     if (view !== "workspace") return;
@@ -302,8 +362,9 @@ export function App() {
     setActiveFile(
       storedFile && targetFiles.some((file) => file.name === storedFile) ? storedFile : "App.tsx",
     );
-    setRoute(
+    navigateRoute(
       nextRoute && projectPageList.some((page) => page.path === nextRoute) ? nextRoute : start,
+      "reset",
     );
     setDark(stored?.dark);
     setDevice(stored?.device ?? device);
@@ -371,7 +432,7 @@ export function App() {
   }
 
   function selectPage(path: string) {
-    setRoute(path);
+    navigateRoute(path);
     setTab("preview");
   }
 
@@ -388,7 +449,7 @@ export function App() {
     }
     const page = { path, label };
     setPages((current) => [...current, page]);
-    setRoute(path);
+    navigateRoute(path);
     setTab("preview");
     return page;
   }
@@ -411,7 +472,7 @@ export function App() {
     );
     if (nextPath === path) return;
     setFiles((current) => rewriteRouteLinks(current, path, nextPath));
-    if (route === path) setRoute(nextPath);
+    replaceHistoryPath(path, nextPath);
     const changes: Record<string, unknown> = {};
     if (startRoute === path) changes.startRoute = nextPath;
     if (afterSubmit === path) changes.afterSubmit = nextPath;
@@ -424,7 +485,7 @@ export function App() {
     if (pages.length <= 1) return;
     const remaining = pages.filter((page) => page.path !== path);
     setPages(() => remaining);
-    if (route === path) setRoute(remaining[0]!.path);
+    replaceHistoryPath(path, remaining[0]!.path);
     const changes: Record<string, unknown> = {};
     if (startRoute === path) changes.startRoute = remaining[0]!.path;
     if (afterSubmit === path) changes.afterSubmit = "";
@@ -473,8 +534,8 @@ export function App() {
     openProject(projects.length, draft);
   }
 
-  async function shareProject() {
-    if (shareState === "copying") return;
+  async function shareProject(): Promise<boolean> {
+    if (shareState === "copying") return false;
     setShareState("copying");
     try {
       const payload = await encodeSnapshot({ title: projectTitle(files, project), files, pages });
@@ -489,7 +550,7 @@ export function App() {
         try {
           await navigator.clipboard.writeText(text);
           setShareState("copied");
-          return;
+          return true;
         } catch {
           // Fall back to a selection copy outside secure contexts.
         }
@@ -504,8 +565,10 @@ export function App() {
       field.remove();
       if (!copied) throw new Error("Clipboard unavailable");
       setShareState("copied");
+      return true;
     } catch {
       setShareState("error");
+      return false;
     }
   }
 
@@ -572,7 +635,7 @@ export function App() {
       );
       setFiles(() => applied.files);
       setPages(() => applied.pages);
-      setRoute(applied.route);
+      navigateRoute(applied.route);
       setActiveFile(applied.activeFile);
       setTab(applied.tab);
       setDevice(applied.device);
@@ -740,6 +803,12 @@ export function App() {
               revision={revision}
               frameRef={frame}
               onDevice={setDevice}
+              canGoBack={canGoBack}
+              canGoForward={canGoForward}
+              onBack={goBack}
+              onForward={goForward}
+              onNavigate={navigateRoute}
+              onCopyLink={shareProject}
               onReload={reloadPreview}
               onDismissErrors={() => {
                 setBuildError("");

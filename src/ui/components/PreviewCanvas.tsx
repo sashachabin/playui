@@ -1,6 +1,19 @@
-import { useEffect, useState, type RefObject } from "react";
 import { Hint } from "@skbkontur/react-ui";
-import { AlertTriangle, Monitor, RotateCcw, Smartphone, Tablet } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Link2,
+  Maximize2,
+  Minimize2,
+  Monitor,
+  RotateCcw,
+  Smartphone,
+  Tablet,
+} from "lucide-react";
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { PAGE_PATH } from "../lib/pages";
 import type { Device } from "../types";
 
 const DEVICES = [
@@ -19,6 +32,12 @@ type PreviewCanvasProps = {
   runtimeError: string;
   revision: number;
   frameRef: RefObject<HTMLIFrameElement | null>;
+  canGoBack?: boolean;
+  canGoForward?: boolean;
+  onBack?: () => void;
+  onForward?: () => void;
+  onNavigate?: (route: string) => void;
+  onCopyLink?: () => Promise<boolean>;
   onDevice: (device: Device) => void;
   onReload: () => void;
   onDismissErrors: () => void;
@@ -34,11 +53,22 @@ export function PreviewCanvas({
   runtimeError,
   revision,
   frameRef,
+  canGoBack = false,
+  canGoForward = false,
+  onBack,
+  onForward,
+  onNavigate,
+  onCopyLink,
   onDevice,
   onReload,
   onDismissErrors,
 }: PreviewCanvasProps) {
   const [viewport, setViewport] = useState("");
+  const [draft, setDraft] = useState(route);
+  const [invalid, setInvalid] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const canvas = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const element = frameRef.current;
@@ -52,8 +82,108 @@ export function PreviewCanvas({
     return () => observer.disconnect();
   }, [frameRef, revision]);
 
+  useEffect(() => {
+    setDraft(route);
+    setInvalid(false);
+  }, [route]);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timeout = window.setTimeout(() => setCopied(false), 1800);
+    return () => window.clearTimeout(timeout);
+  }, [copied]);
+
+  useEffect(() => {
+    const update = () => setIsFullscreen(document.fullscreenElement === canvas.current);
+    document.addEventListener("fullscreenchange", update);
+    return () => document.removeEventListener("fullscreenchange", update);
+  }, []);
+
+  function submitAddress(event: React.FormEvent) {
+    event.preventDefault();
+    const value = draft.trim();
+    const next = value.startsWith("/") ? value : `/${value}`;
+    if (!PAGE_PATH.test(next)) {
+      setInvalid(true);
+      return;
+    }
+    setInvalid(false);
+    onNavigate?.(next);
+  }
+
+  async function copyLink() {
+    try {
+      if (onCopyLink) {
+        setCopied(await onCopyLink());
+        return;
+      }
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  async function toggleFullscreen() {
+    if (!canvas.current) return;
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await canvas.current.requestFullscreen();
+    } catch {
+      // Fullscreen can be blocked by the browser.
+    }
+  }
+
   return (
-    <div className="canvas">
+    <div className="canvas" ref={canvas}>
+      <div className="canvas-addressbar">
+        <div className="address-nav">
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={!canGoBack}
+            title="Back"
+            aria-label="Back"
+          >
+            <ArrowLeft size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={onForward}
+            disabled={!canGoForward}
+            title="Forward"
+            aria-label="Forward"
+          >
+            <ArrowRight size={14} />
+          </button>
+          <button type="button" onClick={onReload} title="Reload" aria-label="Reload preview">
+            <RotateCcw size={14} />
+          </button>
+        </div>
+        <form
+          className={`address-field ${invalid ? "invalid" : ""}`}
+          onSubmit={submitAddress}
+          title="Prototype path"
+        >
+          <span className="address-origin">playui.app</span>
+          <input
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            aria-label="Prototype path"
+            spellCheck={false}
+          />
+        </form>
+        <button
+          type="button"
+          className={`address-action ${copied ? "copied" : ""}`}
+          onClick={() => void copyLink()}
+          title={copied ? "Copied" : "Copy prototype link"}
+          aria-label={copied ? "Copied" : "Copy prototype link"}
+        >
+          {copied ? <Check size={14} /> : <Link2 size={14} />}
+        </button>
+      </div>
+
       {(buildError || runtimeError) && (
         <div className="canvas-error" role="alert">
           <AlertTriangle size={17} />
@@ -71,7 +201,6 @@ export function PreviewCanvas({
         <div className={`device-shell ${device}`}>
           <div className="frame-label">
             <span className="frame-name">{screenLabel}</span>
-            <span className="frame-path">{route}</span>
             <span className="frame-size">{viewport} px</span>
           </div>
           <div className={`device-frame ${device} ${isDark ? "dark" : ""}`}>
@@ -102,14 +231,14 @@ export function PreviewCanvas({
           ))}
         </div>
         <span className="toolbar-sep" />
-        <Hint text="Reload preview" delayBeforeShow={250} useWrapper>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Reload preview"
-            onClick={onReload}
-          >
-            <RotateCcw size={15} />
+        <Hint
+          text={isFullscreen ? "Exit presentation" : "Present prototype"}
+          delayBeforeShow={250}
+          useWrapper
+        >
+          <button type="button" className="toolbar-present" onClick={() => void toggleFullscreen()}>
+            {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            <span>{isFullscreen ? "Exit" : "Present"}</span>
           </button>
         </Hint>
       </div>

@@ -165,6 +165,7 @@ export function SharedView({
             runtimeError={runtimeError}
             revision={revision}
             frameRef={frame}
+            onNavigate={setRoute}
             onDevice={setDevice}
             onReload={() => {
               setRuntimeError("");
