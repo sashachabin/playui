@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react";
+import { Brand } from "../Brand";
 import { designSystemLabel, parseConfig, projectTitle } from "../lib/config";
 import type { FileEntry, Page } from "../types";
 
@@ -21,7 +22,7 @@ export function HomeScreen({
     <main className="home">
       <header className="home-header">
         <div className="brand" aria-label="PlayUI">
-          <span className="brand-name">PlayUI</span>
+          <Brand />
         </div>
         <span className="home-crumb">Projects</span>
         <span className="home-spacer" />

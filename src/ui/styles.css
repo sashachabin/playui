@@ -3059,3 +3059,55 @@ body {
     font-size: 32px;
   }
 }
+
+.brand-name em {
+  color: var(--accent-strong);
+  font-style: italic;
+}
+
+.file-tab-index {
+  flex: 0 0 auto;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.03em;
+}
+
+.file-tab.active .file-tab-index {
+  color: var(--accent);
+}
+
+.device-stage {
+  position: relative;
+}
+
+.device-stage::before,
+.device-stage::after {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: var(--accent);
+  opacity: 0.45;
+  pointer-events: none;
+  content: "";
+}
+
+.device-stage::before {
+  top: 16px;
+  left: 18px;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+
+.device-stage::after {
+  right: 18px;
+  bottom: 16px;
+  border-right: 1px solid;
+  border-bottom: 1px solid;
+}
+
+@media (max-width: 860px) {
+  .file-tab-index {
+    display: none;
+  }
+}
