@@ -11,6 +11,7 @@ import { HomeScreen } from "./components/HomeScreen";
 import { NewFileDialog } from "./components/NewFileDialog";
 import { NewPrototypeDialog } from "./components/NewPrototypeDialog";
 import { PreviewCanvas } from "./components/PreviewCanvas";
+import { ShortcutsDialog } from "./components/ShortcutsDialog";
 import { ProjectSidebar } from "./components/ProjectSidebar";
 import { DEFAULT_PAGES, initialFiles, type ProjectTemplate } from "./data";
 import { applyEditorActions } from "./lib/actions";
@@ -173,17 +174,45 @@ export function App() {
   const [fileSettingsName, setFileSettingsName] = useState<string | null>(null);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [shareState, setShareState] = useState<"idle" | "copying" | "copied" | "error">("idle");
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "k") return;
+      if (document.querySelector(".modal")) return;
       event.preventDefault();
       setPaletteOpen((current) => !current);
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest("input, textarea, select, [contenteditable=true]")) return;
+      if (document.querySelector(".modal")) return;
+      if (event.key === "?") {
+        event.preventDefault();
+        setShortcutsOpen(true);
+        return;
+      }
+      if (event.key.toLowerCase() === "n") {
+        setNewProjectOpen(true);
+        return;
+      }
+      if (view !== "workspace") return;
+      if (event.key.toLowerCase() === "v") setTab("preview");
+      if (event.key.toLowerCase() === "c") setTab("code");
+      if (event.key.toLowerCase() === "r") {
+        setRuntimeError("");
+        setRevision((value) => value + 1);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [view]);
 
   useEffect(() => {
     if (shareState === "idle") return;
@@ -466,37 +495,66 @@ export function App() {
     setProjectPages((current) => [...current, pages]);
   }
 
-  function deleteProject(index: number) {
-    if (projects.length <= 1) return;
-    const nextProjects = projects.filter((_, projectIndex) => projectIndex !== index);
-    const nextPages = projectPages.filter((_, projectIndex) => projectIndex !== index);
-    const nextProject =
-      index < project
-        ? project - 1
-        : index === project
-          ? Math.min(index, nextProjects.length - 1)
-          : project;
+  function deleteProjects(indices: number[]) {
+    const remove = new Set(indices);
+    if (remove.size === 0 || remove.size >= projects.length) return;
+
+    const nextProjects: FileEntry[][] = [];
+    const nextPages: Page[][] = [];
+    const indexMap = new Map<number, number>();
+    for (let index = 0; index < projects.length; index += 1) {
+      if (remove.has(index)) continue;
+      indexMap.set(index, nextProjects.length);
+      nextProjects.push(projects[index]!);
+      nextPages.push(projectPages[index] ?? DEFAULT_PAGES);
+    }
+
+    let nextProject = indexMap.get(project) ?? 0;
+    if (remove.has(project)) {
+      let nearest = -1;
+      for (let index = project - 1; index >= 0; index -= 1) {
+        if (!remove.has(index)) {
+          nearest = index;
+          break;
+        }
+      }
+      if (nearest < 0) {
+        for (let index = project + 1; index < projects.length; index += 1) {
+          if (!remove.has(index)) {
+            nearest = index;
+            break;
+          }
+        }
+      }
+      nextProject = nearest >= 0 ? (indexMap.get(nearest) ?? 0) : 0;
+    }
+
     setProjects(nextProjects);
     setProjectPages(nextPages);
+    setProject(nextProject);
     setOpenProjects((current) =>
       current
-        .filter((candidate) => candidate !== index)
-        .map((candidate) => (candidate > index ? candidate - 1 : candidate)),
+        .filter((index) => !remove.has(index))
+        .map((index) => indexMap.get(index))
+        .filter((index): index is number => index !== undefined),
     );
-    if (nextProject !== project) setProject(nextProject);
+
     const views: Record<number, ProjectViewState> = {};
     for (const [key, value] of Object.entries(projectViews.current)) {
-      const current = Number(key);
-      if (current === index) continue;
-      views[current > index ? current - 1 : current] = value;
+      const index = Number(key);
+      if (remove.has(index)) continue;
+      const mapped = indexMap.get(index);
+      if (mapped !== undefined) views[mapped] = value;
     }
     projectViews.current = views;
+
     setProjectMessages((current) => {
       const next: Record<number, Message[]> = {};
       for (const [key, value] of Object.entries(current)) {
-        const currentIndex = Number(key);
-        if (currentIndex === index) continue;
-        next[currentIndex > index ? currentIndex - 1 : currentIndex] = value;
+        const index = Number(key);
+        if (remove.has(index)) continue;
+        const mapped = indexMap.get(index);
+        if (mapped !== undefined) next[mapped] = value;
       }
       return next;
     });
@@ -897,6 +955,14 @@ export function App() {
     });
   }
 
+  commands.push({
+    id: "shortcuts",
+    label: "Keyboard shortcuts",
+    group: "Help",
+    hint: "?",
+    run: () => setShortcutsOpen(true),
+  });
+
   if (view === "home") {
     return (
       <>
@@ -909,7 +975,7 @@ export function App() {
           onSearch={() => setPaletteOpen(true)}
           onRenameProject={renameProject}
           onDuplicateProject={duplicateProject}
-          onDeleteProject={deleteProject}
+          onDeleteProjects={deleteProjects}
         />
         {newProjectOpen && (
           <NewPrototypeDialog
@@ -923,6 +989,7 @@ export function App() {
         {paletteOpen && (
           <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />
         )}
+        {shortcutsOpen && <ShortcutsDialog onClose={() => setShortcutsOpen(false)} />}
       </>
     );
   }
