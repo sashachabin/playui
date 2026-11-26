@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "../Dialog";
+import { ProjectPreview } from "../ProjectPreview";
 import { designSystemLabel, parseConfig, projectTitle } from "../lib/config";
 import type { FileEntry, Page } from "../types";
 
@@ -360,13 +361,8 @@ export function HomeScreen({
                   <span className="project-select" aria-hidden="true">
                     {selected.has(index) && <Check size={12} />}
                   </span>
-                  <span className="project-thumb" aria-hidden="true">
-                    <span className="project-frame">
-                      <span className="project-frame-title">{title}</span>
-                      <span className="project-frame-line" />
-                      <span className="project-frame-line short" />
-                      <span className="project-frame-button" />
-                    </span>
+                  <span className="project-thumb">
+                    <ProjectPreview files={files} pages={pages[index] ?? []} />
                   </span>
                   <span className="project-meta">
                     <strong>{title}</strong>
