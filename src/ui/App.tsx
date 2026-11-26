@@ -107,6 +107,13 @@ export function App() {
     return () => window.clearTimeout(timer);
   }, [projects, projectPages, project]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void import("./CodeEditor");
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const files = projects[project]!;
   const pages = projectPages[project] ?? DEFAULT_PAGES;
   const filesRef = useRef(files);
@@ -916,17 +923,7 @@ export function App() {
         />
 
         <section className="workspace">
-          {tab === "code" ? (
-            <EditorPane
-              files={files}
-              activeFile={activeFile}
-              projectPath={projectPath}
-              declarations={declarations}
-              onFileChange={updateFile}
-              onOpenFiles={() => setFilesOpen(true)}
-              onOpenSettings={() => setFileSettingsName(activeFile)}
-            />
-          ) : (
+          {tab === "preview" && (
             <PreviewCanvas
               preview={preview ?? ""}
               device={device}
@@ -953,6 +950,17 @@ export function App() {
               }}
             />
           )}
+          <div className={`editor-host ${tab === "code" ? "" : "is-background"}`}>
+            <EditorPane
+              files={files}
+              activeFile={activeFile}
+              projectPath={projectPath}
+              declarations={declarations}
+              onFileChange={updateFile}
+              onOpenFiles={() => setFilesOpen(true)}
+              onOpenSettings={() => setFileSettingsName(activeFile)}
+            />
+          </div>
         </section>
 
         <ChatPanel

@@ -2956,3 +2956,22 @@ button {
   font-family: var(--mono);
   font-size: 9.5px;
 }
+
+.workspace {
+  position: relative;
+}
+
+.editor-host {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.editor-host.is-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
