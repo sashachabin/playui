@@ -1,4 +1,4 @@
-import { File, FolderOpen, Home, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { Copy, File, FolderOpen, Home, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { FileIcon } from "../FileIcon";
 import type { FileEntry, Page } from "../types";
@@ -14,6 +14,8 @@ type ProjectSidebarProps = {
   onSelectPage: (path: string) => void;
   onAddPage: () => Page;
   onRenamePage: (path: string, label: string) => void;
+  onDuplicatePage: (path: string) => void;
+  onReorderPages: (from: number, to: number) => void;
   onDeletePage: (path: string) => void;
   onSetStartPage: (path: string) => void;
   onOpenFile: (name: string) => void;
@@ -34,6 +36,8 @@ export function ProjectSidebar({
   onSelectPage,
   onAddPage,
   onRenamePage,
+  onDuplicatePage,
+  onReorderPages,
   onDeletePage,
   onSetStartPage,
   onOpenFile,
@@ -46,6 +50,24 @@ export function ProjectSidebar({
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [menu, setMenu] = useState<PageMenu | null>(null);
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [dropPage, setDropPage] = useState<{ path: string; after: boolean } | null>(null);
+  const dropPageRef = useRef<{ path: string; after: boolean } | null>(null);
+  const dragState = useRef<{
+    path: string;
+    startX: number;
+    startY: number;
+    active: boolean;
+  } | null>(null);
+  const dragCleanup = useRef<(() => void) | null>(null);
+  const suppressPageClick = useRef(false);
+
+  useEffect(
+    () => () => {
+      dragCleanup.current?.();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (editing === null) return;
@@ -86,6 +108,90 @@ export function ProjectSidebar({
       window.removeEventListener("scroll", dismiss, true);
     };
   }, [menu]);
+
+  function beginPageDrag(event: React.PointerEvent<HTMLDivElement>, page: Page) {
+    if (
+      event.button !== 0 ||
+      busy ||
+      editing !== null ||
+      window.matchMedia("(max-width: 860px)").matches
+    ) {
+      return;
+    }
+    if ((event.target as HTMLElement).closest(".page-menu-button, .page-rename")) return;
+    dragCleanup.current?.();
+    dragState.current = {
+      path: page.path,
+      startX: event.clientX,
+      startY: event.clientY,
+      active: false,
+    };
+    const move = (moveEvent: PointerEvent) => {
+      const state = dragState.current;
+      if (!state) return;
+      if (
+        !state.active &&
+        Math.hypot(moveEvent.clientX - state.startX, moveEvent.clientY - state.startY) < 5
+      ) {
+        return;
+      }
+      if (!state.active) {
+        state.active = true;
+        setDragging(state.path);
+      }
+      moveEvent.preventDefault();
+      const rows = [...document.querySelectorAll<HTMLElement>(".page-list .page-item-wrap")].filter(
+        (row) => row.dataset.page !== state.path,
+      );
+      const hit = rows.find((row) => {
+        const rect = row.getBoundingClientRect();
+        return moveEvent.clientY >= rect.top && moveEvent.clientY <= rect.bottom;
+      });
+      if (hit) {
+        const rect = hit.getBoundingClientRect();
+        const nextTarget = {
+          path: hit.dataset.page ?? "",
+          after: moveEvent.clientY > rect.top + rect.height / 2,
+        };
+        dropPageRef.current = nextTarget;
+        setDropPage(nextTarget);
+      } else {
+        dropPageRef.current = null;
+        setDropPage(null);
+      }
+    };
+    const cleanup = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      dragCleanup.current = null;
+      dragState.current = null;
+    };
+    const finish = () => {
+      const state = dragState.current;
+      const target = dropPageRef.current;
+      cleanup();
+      dropPageRef.current = null;
+      setDropPage(null);
+      setDragging(null);
+      if (!state?.active) return;
+      suppressPageClick.current = true;
+      window.setTimeout(() => {
+        suppressPageClick.current = false;
+      }, 0);
+      if (!target) return;
+      const from = pages.findIndex((candidate) => candidate.path === state.path);
+      let to = pages.findIndex((candidate) => candidate.path === target.path);
+      if (from < 0 || to < 0) return;
+      if (target.after) to += 1;
+      if (from < to) to -= 1;
+      onReorderPages(from, to);
+    };
+    dragCleanup.current = cleanup;
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", finish);
+  }
 
   function beginRename(page: Page) {
     if (busy) return;
@@ -166,7 +272,17 @@ export function ProjectSidebar({
             return (
               <div
                 key={page.path}
-                className={`page-item-wrap ${active ? "active" : ""}`}
+                data-page={page.path}
+                className={`page-item-wrap ${active ? "active" : ""} ${
+                  dragging === page.path ? "dragging" : ""
+                } ${
+                  dropPage?.path === page.path
+                    ? dropPage.after
+                      ? "drop-after"
+                      : "drop-before"
+                    : ""
+                }`}
+                onPointerDown={(event) => beginPageDrag(event, page)}
                 onContextMenu={(event) => openMenu(event, page)}
               >
                 {isEditing ? (
@@ -200,7 +316,13 @@ export function ProjectSidebar({
                     type="button"
                     className="page-item"
                     aria-current={active ? "page" : undefined}
-                    onClick={() => onSelectPage(page.path)}
+                    onClick={() => {
+                      if (suppressPageClick.current) {
+                        suppressPageClick.current = false;
+                        return;
+                      }
+                      onSelectPage(page.path);
+                    }}
                     onDoubleClick={(event) => {
                       event.stopPropagation();
                       beginRename(page);
@@ -296,6 +418,18 @@ export function ProjectSidebar({
           >
             <Pencil size={13} />
             Rename
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={busy}
+            onClick={() => {
+              onDuplicatePage(menuPage.path);
+              setMenu(null);
+            }}
+          >
+            <Copy size={13} />
+            Duplicate
           </button>
           <button
             type="button"

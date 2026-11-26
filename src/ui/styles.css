@@ -3173,3 +3173,53 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+.page-item-wrap.dragging,
+.project-card-wrap.dragging {
+  opacity: 0.45;
+}
+
+.page-item-wrap.drop-before::before,
+.page-item-wrap.drop-after::after {
+  position: absolute;
+  right: 4px;
+  left: 4px;
+  z-index: 4;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text);
+  content: "";
+}
+
+.page-item-wrap.drop-before::before {
+  top: -2px;
+}
+
+.page-item-wrap.drop-after::after {
+  bottom: -2px;
+}
+
+.project-card-wrap.drop-before::before,
+.project-card-wrap.drop-after::after {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  z-index: 4;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--text);
+  content: "";
+}
+
+.project-card-wrap.drop-before::before {
+  left: -3px;
+}
+
+.project-card-wrap.drop-after::after {
+  right: -3px;
+}
+
+.is-dragging-project,
+.is-dragging-project * {
+  cursor: grabbing !important;
+}

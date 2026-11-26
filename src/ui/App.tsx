@@ -470,7 +470,7 @@ export function App() {
     }
   }
 
-  function reorderProjects(next: number[]) {
+  function reorderOpenTabs(next: number[]) {
     if (next.length === openProjects.length) setOpenProjects(next);
   }
 
@@ -480,6 +480,41 @@ export function App() {
         projectIndex === index ? writeConfig(projectFiles, { name }) : projectFiles,
       ),
     );
+  }
+
+  function reorderProjectCards(from: number, to: number) {
+    if (from === to || from < 0 || to < 0 || from >= projects.length) return;
+    const order = projects.map((_, index) => index);
+    const [moved] = order.splice(from, 1);
+    if (moved === undefined) return;
+    order.splice(Math.min(to, order.length), 0, moved);
+    const indexMap = new Map<number, number>();
+    order.forEach((oldIndex, newIndex) => indexMap.set(oldIndex, newIndex));
+
+    setProjects(order.map((index) => projects[index]!));
+    setProjectPages(order.map((index) => projectPages[index] ?? DEFAULT_PAGES));
+    setProject(indexMap.get(project) ?? 0);
+    setOpenProjects((current) =>
+      current
+        .map((index) => indexMap.get(index))
+        .filter((index): index is number => index !== undefined),
+    );
+
+    const views: Record<number, ProjectViewState> = {};
+    for (const [key, value] of Object.entries(projectViews.current)) {
+      const mapped = indexMap.get(Number(key));
+      if (mapped !== undefined) views[mapped] = value;
+    }
+    projectViews.current = views;
+
+    setProjectMessages((current) => {
+      const next: Record<number, Message[]> = {};
+      for (const [key, value] of Object.entries(current)) {
+        const mapped = indexMap.get(Number(key));
+        if (mapped !== undefined) next[mapped] = value;
+      }
+      return next;
+    });
   }
 
   function duplicateProject(index: number) {
@@ -558,6 +593,34 @@ export function App() {
       }
       return next;
     });
+  }
+
+  function reorderPages(from: number, to: number) {
+    if (from === to || from < 0 || to < 0 || from >= pages.length) return;
+    setPages((current) => {
+      const next = [...current];
+      const [moved] = next.splice(from, 1);
+      if (!moved) return current;
+      next.splice(Math.min(to, next.length), 0, moved);
+      return next;
+    });
+  }
+
+  function duplicatePage(path: string) {
+    const index = pages.findIndex((page) => page.path === path);
+    const source = pages[index];
+    if (!source) return;
+    const label = `${source.label} copy`;
+    let nextPath = pathFromLabel(label) || `${source.path}-copy`;
+    let suffix = 2;
+    while (pages.some((page) => page.path === nextPath)) {
+      nextPath = `${pathFromLabel(label) || `${source.path}-copy`}-${suffix}`;
+      suffix += 1;
+    }
+    const page = { path: nextPath, label };
+    setPages((current) => [...current.slice(0, index + 1), page, ...current.slice(index + 1)]);
+    navigateRoute(nextPath);
+    setTab("preview");
   }
 
   function selectPage(path: string) {
@@ -976,6 +1039,7 @@ export function App() {
           onRenameProject={renameProject}
           onDuplicateProject={duplicateProject}
           onDeleteProjects={deleteProjects}
+          onReorderProjects={reorderProjectCards}
         />
         {newProjectOpen && (
           <NewPrototypeDialog
@@ -1007,7 +1071,7 @@ export function App() {
         onCloseProject={closeProject}
         onCloseOtherProjects={closeOtherProjects}
         onCloseProjectsToRight={closeProjectsToRight}
-        onReorderProjects={reorderProjects}
+        onReorderProjects={reorderOpenTabs}
         onRenameProject={renameProject}
         onNewProject={() => setNewProjectOpen(true)}
         onSearch={() => setPaletteOpen(true)}
@@ -1034,6 +1098,8 @@ export function App() {
           onSelectPage={selectPage}
           onAddPage={addPage}
           onRenamePage={renamePage}
+          onDuplicatePage={duplicatePage}
+          onReorderPages={reorderPages}
           onDeletePage={deletePage}
           onSetStartPage={setStartPage}
           onOpenFile={openFile}

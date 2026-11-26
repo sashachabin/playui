@@ -24,6 +24,7 @@ type HomeScreenProps = {
   onRenameProject: (index: number, name: string) => void;
   onDuplicateProject: (index: number) => void;
   onDeleteProjects: (indices: number[]) => void;
+  onReorderProjects: (from: number, to: number) => void;
 };
 
 type ProjectMenu = { index: number; x: number; y: number };
@@ -38,6 +39,7 @@ export function HomeScreen({
   onRenameProject,
   onDuplicateProject,
   onDeleteProjects,
+  onReorderProjects,
 }: HomeScreenProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [menu, setMenu] = useState<ProjectMenu | null>(null);
@@ -47,6 +49,17 @@ export function HomeScreen({
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [anchor, setAnchor] = useState<number | null>(null);
+  const [dragging, setDragging] = useState<number | null>(null);
+  const [dropProject, setDropProject] = useState<{ index: number; after: boolean } | null>(null);
+  const dropProjectRef = useRef<{ index: number; after: boolean } | null>(null);
+  const dragState = useRef<{
+    index: number;
+    startX: number;
+    startY: number;
+    active: boolean;
+  } | null>(null);
+  const dragCleanup = useRef<(() => void) | null>(null);
+  const suppressClick = useRef(false);
 
   useEffect(() => {
     if (!menu) return;
@@ -96,6 +109,104 @@ export function HomeScreen({
     setRenaming(index);
   }
 
+  useEffect(
+    () => () => {
+      dragCleanup.current?.();
+    },
+    [],
+  );
+
+  function beginProjectDrag(event: React.PointerEvent<HTMLDivElement>, index: number) {
+    if (
+      event.button !== 0 ||
+      event.pointerType !== "mouse" ||
+      selectMode ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey
+    ) {
+      return;
+    }
+    if ((event.target as HTMLElement).closest(".project-card-menu")) return;
+    dragCleanup.current?.();
+    dragState.current = {
+      index,
+      startX: event.clientX,
+      startY: event.clientY,
+      active: false,
+    };
+    const move = (moveEvent: PointerEvent) => {
+      const state = dragState.current;
+      if (!state) return;
+      if (
+        !state.active &&
+        Math.hypot(moveEvent.clientX - state.startX, moveEvent.clientY - state.startY) < 6
+      ) {
+        return;
+      }
+      if (!state.active) {
+        state.active = true;
+        setDragging(state.index);
+        document.body.classList.add("is-dragging-project");
+      }
+      moveEvent.preventDefault();
+      const cards = [
+        ...document.querySelectorAll<HTMLElement>(".project-card-wrap[data-project-index]"),
+      ].filter((card) => card.dataset.projectIndex !== String(state.index));
+      const hit = cards.find((card) => {
+        const rect = card.getBoundingClientRect();
+        return (
+          moveEvent.clientX >= rect.left &&
+          moveEvent.clientX <= rect.right &&
+          moveEvent.clientY >= rect.top &&
+          moveEvent.clientY <= rect.bottom
+        );
+      });
+      if (hit) {
+        const rect = hit.getBoundingClientRect();
+        const nextTarget = {
+          index: Number(hit.dataset.projectIndex),
+          after: moveEvent.clientX > rect.left + rect.width / 2,
+        };
+        dropProjectRef.current = nextTarget;
+        setDropProject(nextTarget);
+      } else {
+        dropProjectRef.current = null;
+        setDropProject(null);
+      }
+    };
+    const cleanup = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      dragCleanup.current = null;
+      dragState.current = null;
+      document.body.classList.remove("is-dragging-project");
+    };
+    const finish = () => {
+      const state = dragState.current;
+      const target = dropProjectRef.current;
+      cleanup();
+      dropProjectRef.current = null;
+      setDropProject(null);
+      setDragging(null);
+      if (!state?.active) return;
+      suppressClick.current = true;
+      window.setTimeout(() => {
+        suppressClick.current = false;
+      }, 0);
+      if (!target) return;
+      let to = target.index;
+      if (target.after) to += 1;
+      if (state.index < to) to -= 1;
+      if (to !== state.index) onReorderProjects(state.index, to);
+    };
+    dragCleanup.current = cleanup;
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", finish);
+  }
+
   function clearSelection() {
     setSelectMode(false);
     setSelected(new Set());
@@ -121,6 +232,10 @@ export function HomeScreen({
   }
 
   function cardClick(event: React.MouseEvent, index: number) {
+    if (suppressClick.current) {
+      suppressClick.current = false;
+      return;
+    }
     if (selectMode || event.metaKey || event.ctrlKey || event.shiftKey) {
       event.preventDefault();
       toggleSelection(index, event.shiftKey);
@@ -224,7 +339,17 @@ export function HomeScreen({
             return (
               <div
                 key={index}
-                className={`project-card-wrap ${selected.has(index) ? "is-selected" : ""}`}
+                data-project-index={index}
+                className={`project-card-wrap ${selected.has(index) ? "is-selected" : ""} ${
+                  dragging === index ? "dragging" : ""
+                } ${
+                  dropProject?.index === index
+                    ? dropProject.after
+                      ? "drop-after"
+                      : "drop-before"
+                    : ""
+                }`}
+                onPointerDown={(event) => beginProjectDrag(event, index)}
                 onContextMenu={(event) => openMenu(event, index)}
               >
                 <button
