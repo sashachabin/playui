@@ -266,11 +266,7 @@ export function HomeScreen({
         selectAll();
         return;
       }
-      if (
-        (event.key === "Delete" || event.key === "Backspace") &&
-        selected.size > 0 &&
-        selected.size < projects.length
-      ) {
+      if ((event.key === "Delete" || event.key === "Backspace") && selected.size > 0) {
         event.preventDefault();
         setDeleting([...selected]);
       }
@@ -302,17 +298,19 @@ export function HomeScreen({
           <span className="brand-name">PlayUI</span>
         </div>
         <span className="home-spacer" />
-        <button
-          type="button"
-          className={`home-select ${selectMode ? "active" : ""}`}
-          aria-label={selectMode ? "Finish selecting prototypes" : "Select prototypes"}
-          aria-pressed={selectMode}
-          title={selectMode ? "Finish selecting" : "Select prototypes"}
-          onClick={() => (selectMode ? clearSelection() : setSelectMode(true))}
-        >
-          <CheckSquare size={14} />
-          <span>{selectMode ? "Done" : "Select"}</span>
-        </button>
+        {projects.length > 0 && (
+          <button
+            type="button"
+            className={`home-select ${selectMode ? "active" : ""}`}
+            aria-label={selectMode ? "Finish selecting prototypes" : "Select prototypes"}
+            aria-pressed={selectMode}
+            title={selectMode ? "Finish selecting" : "Select prototypes"}
+            onClick={() => (selectMode ? clearSelection() : setSelectMode(true))}
+          >
+            <CheckSquare size={14} />
+            <span>{selectMode ? "Done" : "Select"}</span>
+          </button>
+        )}
         <button
           type="button"
           className="home-search"
@@ -440,7 +438,6 @@ export function HomeScreen({
           <button
             type="button"
             role="menuitem"
-            disabled={projects.length <= 1}
             onClick={() => {
               setDeleting([menu.index]);
               setMenu(null);
@@ -525,12 +522,8 @@ export function HomeScreen({
           <button
             type="button"
             className="btn btn-danger"
-            disabled={selected.size === 0 || selected.size >= projects.length}
-            title={
-              selected.size >= projects.length
-                ? "Keep at least one prototype"
-                : "Delete selected prototypes"
-            }
+            disabled={selected.size === 0}
+            title="Delete selected prototypes"
             onClick={() => setDeleting([...selected])}
           >
             Delete

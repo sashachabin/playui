@@ -45,6 +45,8 @@ import type { Device, EditorAction, FileEntry, Message, Page, Tab } from "./type
 import { loadWorkspace, saveWorkspace } from "./workspace";
 
 const AI_TIMEOUT_MS = 240_000;
+const EMPTY_FILES: FileEntry[] = [];
+const EMPTY_PAGES: Page[] = [];
 
 type ProjectViewState = {
   activeFile: string;
@@ -74,15 +76,16 @@ export function App() {
         )
       : -1;
   const initialProject = urlProject >= 0 ? urlProject : workspace.active;
-  const initialPages = workspace.pages[initialProject] ?? DEFAULT_PAGES;
-  const initialConfig = parseConfig(workspace.projects[initialProject]!);
+  const initialProjectFiles = workspace.projects[initialProject] ?? EMPTY_FILES;
+  const initialPages = workspace.pages[initialProject] ?? EMPTY_PAGES;
+  const initialConfig = parseConfig(initialProjectFiles);
   const configuredStart =
     typeof initialConfig?.startRoute === "string" ? initialConfig.startRoute : undefined;
   const initialStart =
     configuredStart && initialPages.some((page) => page.path === configuredStart)
       ? configuredStart
       : (initialPages[0]?.path ?? "/");
-  const initialFileList = workspace.projects[initialProject]!;
+  const initialFileList = initialProjectFiles;
   const initialRoute =
     initialLocation.kind === "project" && PAGE_PATH.test(initialLocation.page)
       ? initialLocation.page
@@ -95,9 +98,13 @@ export function App() {
       : "App.tsx";
   const [projects, setProjects] = useState(workspace.projects);
   const [project, setProject] = useState(initialProject);
-  const [openProjects, setOpenProjects] = useState([initialProject]);
+  const [openProjects, setOpenProjects] = useState(
+    workspace.projects.length > 0 ? [initialProject] : [],
+  );
   const [view, setView] = useState<"home" | "workspace">(
-    initialLocation.kind === "project" && urlProject >= 0 ? "workspace" : "home",
+    initialLocation.kind === "project" && urlProject >= 0 && workspace.projects.length > 0
+      ? "workspace"
+      : "home",
   );
   const [projectPages, setProjectPages] = useState<Page[][]>(workspace.pages);
   const [storageError, setStorageError] = useState(false);
@@ -115,8 +122,9 @@ export function App() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  const files = projects[project]!;
-  const pages = projectPages[project] ?? DEFAULT_PAGES;
+  const activeProjectFiles = projects[project];
+  const files = activeProjectFiles ?? EMPTY_FILES;
+  const pages = projectPages[project] ?? EMPTY_PAGES;
   const filesRef = useRef(files);
   const pagesRef = useRef(pages);
   filesRef.current = files;
@@ -245,6 +253,12 @@ export function App() {
   const frame = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
+    if (!activeProjectFiles) {
+      setCompiled(undefined);
+      setBuildError("");
+      setRuntimeError("");
+      return;
+    }
     let stale = false;
     const timeout = window.setTimeout(async () => {
       try {
@@ -264,7 +278,11 @@ export function App() {
       stale = true;
       window.clearTimeout(timeout);
     };
-  }, [files, view]);
+  }, [activeProjectFiles, files, view]);
+
+  useEffect(() => {
+    if (!activeProjectFiles && view !== "home") setView("home");
+  }, [activeProjectFiles, view]);
 
   const theme = config?.theme === "dark" ? "dark" : "light";
   const isDark = dark ?? theme === "dark";
@@ -534,7 +552,8 @@ export function App() {
 
   function deleteProjects(indices: number[]) {
     const remove = new Set(indices);
-    if (remove.size === 0 || remove.size >= projects.length) return;
+    if (remove.size === 0) return;
+    const removingAll = remove.size >= projects.length;
 
     const nextProjects: FileEntry[][] = [];
     const nextPages: Page[][] = [];
@@ -569,6 +588,12 @@ export function App() {
     setProjects(nextProjects);
     setProjectPages(nextPages);
     setProject(nextProject);
+    if (removingAll) {
+      setView("home");
+      setCompiled(undefined);
+      setBuildError("");
+      setRuntimeError("");
+    }
     setOpenProjects((current) =>
       current
         .filter((index) => !remove.has(index))
@@ -1028,7 +1053,7 @@ export function App() {
     run: () => setShortcutsOpen(true),
   });
 
-  if (view === "home") {
+  if (view === "home" || !activeProjectFiles) {
     return (
       <>
         <HomeScreen

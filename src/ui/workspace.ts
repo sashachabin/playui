@@ -8,7 +8,10 @@ const storageKey = "playui.workspace.v1";
 export function loadWorkspace(fallback: Workspace): Workspace {
   try {
     const data = JSON.parse(localStorage.getItem(storageKey) ?? "null");
-    if (!data || !Array.isArray(data.projects) || !data.projects.length) return fallback;
+    if (!data || !Array.isArray(data.projects) || !Array.isArray(data.pages)) return fallback;
+    if (data.projects.length === 0) {
+      return data.pages.length === 0 ? { projects: [], pages: [], active: 0 } : fallback;
+    }
     const projectsValid = data.projects.every(
       (files: unknown) =>
         Array.isArray(files) &&
@@ -22,8 +25,7 @@ export function loadWorkspace(fallback: Workspace): Workspace {
         ) &&
         ["App.tsx", "playui.config.json"].every((name) => files.some((file) => file.name === name)),
     );
-    if (!projectsValid || !Array.isArray(data.pages) || data.pages.length !== data.projects.length)
-      return fallback;
+    if (!projectsValid || data.pages.length !== data.projects.length) return fallback;
     if (
       !data.pages.every(
         (pages: unknown) =>
