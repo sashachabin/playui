@@ -1,4 +1,4 @@
-import { Button, Hint, Input } from "@skbkontur/react-ui";
+import { Button, Group, Hint, Input } from "@skbkontur/react-ui";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -296,22 +296,24 @@ export function KonturPreviewCanvas({
             <span className="k-toolbar-sep" />
           </>
         )}
-        <div className="k-device-switch" role="group" aria-label="Preview size">
-          {DEVICES.map(([value, label, Icon]) => (
-            <Button
-              key={value}
-              use="text"
-              size="small"
-              active={device === value}
-              icon={<Icon size={14} />}
-              aria-label={label}
-              aria-pressed={device === value}
-              title={label}
-              onClick={() => onDevice(value as Device)}
-            >
-              <span className="k-device-label">{label}</span>
-            </Button>
-          ))}
+        <div className="k-device-group" role="group" aria-label="Preview size">
+          <Group className="k-device-switch">
+            {DEVICES.map(([value, label, Icon]) => (
+              <Button
+                key={value}
+                use="text"
+                size="small"
+                active={device === value}
+                icon={<Icon size={14} />}
+                aria-label={label}
+                aria-pressed={device === value}
+                title={label}
+                onClick={() => onDevice(value as Device)}
+              >
+                <span className="k-device-label">{label}</span>
+              </Button>
+            ))}
+          </Group>
         </div>
         <span className="k-toolbar-sep" />
         {onToggleTheme && (

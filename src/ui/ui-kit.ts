@@ -9,6 +9,7 @@ import { NewFileDialog } from "./components/NewFileDialog";
 import { NewPrototypeDialog } from "./components/NewPrototypeDialog";
 import { PreviewCanvas } from "./components/PreviewCanvas";
 import { ProjectSidebar } from "./components/ProjectSidebar";
+import { ShareToast } from "./components/ShareToast";
 import { ShortcutsDialog } from "./components/ShortcutsDialog";
 import { SharedView } from "./SharedView";
 import { KonturChatPanel } from "./kontur/KonturChatPanel";
@@ -23,6 +24,7 @@ import { KonturNewPrototypeDialog } from "./kontur/KonturNewPrototypeDialog";
 import { KonturPreviewCanvas } from "./kontur/KonturPreviewCanvas";
 import { KonturProjectSidebar } from "./kontur/KonturProjectSidebar";
 import { KonturSharedView } from "./kontur/KonturSharedView";
+import { KonturShareToast } from "./kontur/KonturShareToast";
 import { KonturShortcutsDialog } from "./kontur/KonturShortcutsDialog";
 import { isKonturUi } from "./ui-variant";
 
@@ -41,6 +43,7 @@ export const classicKit = {
   NewFileDialog,
   FileSettingsDialog,
   ShortcutsDialog,
+  ShareToast,
   SharedView,
 };
 
@@ -59,6 +62,7 @@ export const konturKit: UiKit = {
   NewFileDialog: KonturNewFileDialog,
   FileSettingsDialog: KonturFileSettingsDialog,
   ShortcutsDialog: KonturShortcutsDialog,
+  ShareToast: KonturShareToast,
   SharedView: KonturSharedView,
 };
 

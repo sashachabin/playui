@@ -33,8 +33,10 @@ preview runtime:
 - **Classic** (default) — the original interface.
 - **Kontur UI** — the same screens built with
   [`@skbkontur/react-ui`](https://github.com/skbkontur/retail-ui) components
-  (`Button`, `Input`, `Textarea`, `Modal`, `DropdownMenu`, `Tabs`, `Tooltip`)
-  and coloured with [`@skbkontur/colors`](https://www.npmjs.com/package/@skbkontur/colors)
+  (`Button`, `Input`, `Textarea`, `Checkbox`, `Tabs`, `Group`, `Kebab`,
+  `DropdownMenu`, `MenuItem`, `MenuHeader`, `Modal`, `Toast`, `Loader`, `Hint`,
+  `Link`) and coloured with
+  [`@skbkontur/colors`](https://www.npmjs.com/package/@skbkontur/colors)
   tokens (`brand-green` / `accent-gray`).
 
 Open any PlayUI URL with `?ui=kontur` to use the Kontur layer, for example

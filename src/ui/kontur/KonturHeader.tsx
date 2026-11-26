@@ -1,16 +1,5 @@
-import { Button, DropdownMenu, MenuItem, MenuSeparator, Tabs } from "@skbkontur/react-ui";
-import {
-  Check,
-  ChevronDown,
-  Code2,
-  Monitor,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Search,
-  Share2,
-  X,
-} from "lucide-react";
+import { Button, DropdownMenu, Kebab, MenuItem, MenuSeparator, Tabs } from "@skbkontur/react-ui";
+import { Check, ChevronDown, Code2, Monitor, Pencil, Plus, Search, Share2, X } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { projectTitle } from "../lib/config";
 import type { HeaderProps } from "../components/Header";
@@ -263,20 +252,10 @@ export function KonturHeader({
                     disabled={busy}
                     onClick={() => onCloseProject(index)}
                   />
-                  <DropdownMenu
-                    caption={
-                      <Button
-                        use="text"
-                        size="small"
-                        icon={<MoreHorizontal size={14} />}
-                        aria-label={`Actions for ${title}`}
-                        title="Tab actions"
-                        disabled={busy}
-                      >
-                        <span className="k-sr-only">Tab actions</span>
-                      </Button>
-                    }
-                    menuWidth={204}
+                  <Kebab
+                    size="small"
+                    aria-label={`Actions for ${title}`}
+                    disabled={busy}
                     positions={["bottom right", "bottom left", "top right", "top left"]}
                   >
                     <MenuItem icon={<Pencil size={13} />} onClick={() => beginRename(index)}>
@@ -300,7 +279,7 @@ export function KonturHeader({
                     >
                       Close to the right
                     </MenuItem>
-                  </DropdownMenu>
+                  </Kebab>
                 </span>
               </div>
             );

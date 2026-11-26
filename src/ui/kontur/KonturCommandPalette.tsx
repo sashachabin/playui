@@ -1,4 +1,4 @@
-import { Input, MenuItem, Modal } from "@skbkontur/react-ui";
+import { Input, MenuHeader, MenuItem, Modal } from "@skbkontur/react-ui";
 import { Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Command, CommandPaletteProps } from "../components/CommandPalette";
@@ -89,7 +89,11 @@ export function KonturCommandPalette({ commands, onClose }: CommandPaletteProps)
               group = command.group;
               return (
                 <div key={command.id} className="k-palette-group-wrap">
-                  {heading && <div className="k-palette-group">{heading}</div>}
+                  {heading && (
+                    <MenuHeader size="small" className="k-palette-group">
+                      {heading}
+                    </MenuHeader>
+                  )}
                   <MenuItem
                     id={`k-command-${index}`}
                     role="option"

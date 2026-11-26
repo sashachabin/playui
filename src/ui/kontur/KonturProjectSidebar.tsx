@@ -1,5 +1,5 @@
-import { Button, DropdownMenu, MenuItem, MenuSeparator } from "@skbkontur/react-ui";
-import { Copy, File, FolderOpen, Home, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { Button, Kebab, MenuItem, MenuSeparator } from "@skbkontur/react-ui";
+import { Copy, File, FolderOpen, Home, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ProjectSidebarProps } from "../components/ProjectSidebar";
 import { FileIcon } from "../FileIcon";
@@ -200,20 +200,10 @@ export function KonturProjectSidebar({
                         <span className="k-page-path">{page.path}</span>
                       </span>
                     </button>
-                    <DropdownMenu
-                      caption={
-                        <Button
-                          use="text"
-                          size="small"
-                          icon={<MoreHorizontal size={14} />}
-                          aria-label={`Page options for ${page.label}`}
-                          title="Page options"
-                          disabled={busy}
-                        >
-                          <span className="k-sr-only">Page options</span>
-                        </Button>
-                      }
-                      menuWidth={210}
+                    <Kebab
+                      size="small"
+                      aria-label={`Page options for ${page.label}`}
+                      disabled={busy}
                       positions={["bottom right", "bottom left", "top right", "top left"]}
                     >
                       <MenuItem icon={<Pencil size={13} />} onClick={() => beginRename(page)}>
@@ -240,7 +230,7 @@ export function KonturProjectSidebar({
                       >
                         Delete
                       </MenuItem>
-                    </DropdownMenu>
+                    </Kebab>
                   </>
                 )}
               </div>

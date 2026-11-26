@@ -1,22 +1,14 @@
 import {
   Button,
   Checkbox,
-  DropdownMenu,
   Input,
+  Kebab,
+  Link,
   MenuItem,
   MenuSeparator,
   Textarea,
 } from "@skbkontur/react-ui";
-import {
-  Check,
-  Copy,
-  FolderOpen,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { Check, Copy, FolderOpen, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { HomeScreenProps } from "../components/HomeScreen";
 import { ProjectPreview } from "../ProjectPreview";
@@ -193,9 +185,14 @@ export function KonturHomeScreen({
         >
           <span className="k-home-new-label">New prototype</span>
         </Button>
-        <a className="k-ui-switch" href={uiVariantHref("classic")} title="Switch to the classic UI">
+        <Link
+          use="grayed"
+          className="k-ui-switch"
+          href={uiVariantHref("classic")}
+          title="Switch to the classic UI"
+        >
           Classic UI
-        </a>
+        </Link>
       </header>
 
       <div className="k-home-main">
@@ -348,19 +345,9 @@ export function KonturHomeScreen({
                     />
                   </span>
                   <span className="k-project-actions">
-                    <DropdownMenu
-                      caption={
-                        <Button
-                          use="text"
-                          size="small"
-                          icon={<MoreHorizontal size={16} />}
-                          aria-label={`Manage ${title}`}
-                          title="Manage prototype"
-                        >
-                          <span className="k-sr-only">Manage prototype</span>
-                        </Button>
-                      }
-                      menuWidth={204}
+                    <Kebab
+                      size="small"
+                      aria-label={`Manage ${title}`}
                       positions={["bottom right", "bottom left", "top right", "top left"]}
                     >
                       <MenuItem
@@ -379,7 +366,7 @@ export function KonturHomeScreen({
                       <MenuItem icon={<Trash2 size={13} />} onClick={() => setDeleting([index])}>
                         Delete
                       </MenuItem>
-                    </DropdownMenu>
+                    </Kebab>
                   </span>
                 </div>
               );

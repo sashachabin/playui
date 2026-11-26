@@ -1355,17 +1355,6 @@ export function App() {
         />
       </div>
 
-      {shareState === "copied" && (
-        <div className="toast" role="status">
-          Share link copied
-        </div>
-      )}
-      {shareState === "error" && (
-        <div className="toast toast-error" role="alert">
-          Could not copy the share link
-        </div>
-      )}
-
       {newProjectOpen && (
         <UI.NewPrototypeDialog
           onClose={() => setNewProjectOpen(false)}
@@ -1414,6 +1403,8 @@ export function App() {
       {paletteOpen && (
         <UI.CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />
       )}
+
+      <UI.ShareToast state={shareState} />
     </main>
   );
 }
