@@ -540,22 +540,24 @@ export function Header({
         <button
           type="button"
           role="tab"
+          aria-label="Preview"
           aria-selected={tab === "preview"}
           className={tab === "preview" ? "active" : ""}
           onClick={() => onSelectTab("preview")}
         >
           <Monitor size={14} />
-          Preview
+          <span>Preview</span>
         </button>
         <button
           type="button"
           role="tab"
+          aria-label="Code"
           aria-selected={tab === "code"}
           className={tab === "code" ? "active" : ""}
           onClick={() => onSelectTab("code")}
         >
           <Code2 size={14} />
-          Code
+          <span>Code</span>
         </button>
       </div>
 

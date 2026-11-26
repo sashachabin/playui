@@ -238,6 +238,7 @@ export function App() {
   const [compiled, setCompiled] = useState<{
     bundle: Awaited<ReturnType<typeof compilePreview>>;
     document: typeof import("../preview/compile").previewDocument;
+    files: FileEntry[];
   }>();
   const [buildError, setBuildError] = useState("");
   const [runtimeError, setRuntimeError] = useState("");
@@ -252,7 +253,7 @@ export function App() {
           Object.fromEntries(files.map((file) => [file.name, file.value])),
         );
         if (stale) return;
-        setCompiled({ bundle, document: runtime.previewDocument });
+        setCompiled({ bundle, document: runtime.previewDocument, files });
         setBuildError("");
         setRuntimeError("");
       } catch (error) {
@@ -263,7 +264,7 @@ export function App() {
       stale = true;
       window.clearTimeout(timeout);
     };
-  }, [files]);
+  }, [files, view]);
 
   const theme = config?.theme === "dark" ? "dark" : "light";
   const isDark = dark ?? theme === "dark";
@@ -298,14 +299,16 @@ export function App() {
   }, []);
   const preview = useMemo(
     () =>
-      compiled?.document(compiled.bundle, {
-        route,
-        dark: isDark,
-        locale,
-        outlines,
-        afterSubmit,
-      }),
-    [compiled, route, isDark, locale, outlines, afterSubmit],
+      compiled && compiled.files === files
+        ? compiled.document(compiled.bundle, {
+            route,
+            dark: isDark,
+            locale,
+            outlines,
+            afterSubmit,
+          })
+        : "",
+    [compiled, files, route, isDark, locale, outlines, afterSubmit],
   );
 
   useEffect(() => {
@@ -406,7 +409,6 @@ export function App() {
     const targetFiles = projects[index] ?? projectFiles;
     const storedFile = stored?.activeFile;
     const nextRoute = stored?.route;
-    setCompiled(undefined);
     setBuildError("");
     setRuntimeError("");
     setProject(index);

@@ -305,12 +305,21 @@ export function HomeScreen({
         <button
           type="button"
           className={`home-select ${selectMode ? "active" : ""}`}
+          aria-label={selectMode ? "Finish selecting prototypes" : "Select prototypes"}
+          aria-pressed={selectMode}
+          title={selectMode ? "Finish selecting" : "Select prototypes"}
           onClick={() => (selectMode ? clearSelection() : setSelectMode(true))}
         >
           <CheckSquare size={14} />
           <span>{selectMode ? "Done" : "Select"}</span>
         </button>
-        <button type="button" className="home-search" onClick={onSearch}>
+        <button
+          type="button"
+          className="home-search"
+          aria-label="Search and commands"
+          title="Search and commands (⌘K)"
+          onClick={onSearch}
+        >
           <Search size={14} />
           <span>Search</span>
           <kbd>⌘K</kbd>
