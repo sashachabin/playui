@@ -2896,3 +2896,63 @@ button {
     display: none;
   }
 }
+
+.address-field {
+  position: relative;
+}
+
+.address-suggestions {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  left: 0;
+  z-index: 20;
+  max-height: 260px;
+  padding: 4px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgb(24 24 27 / 14%);
+}
+
+.address-suggestions-label {
+  padding: 5px 7px 3px;
+  color: var(--faint);
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+.address-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 30px;
+  padding: 5px 7px;
+  color: var(--text);
+  font-size: 11.5px;
+  text-align: left;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+}
+
+.address-suggestion:hover,
+.address-suggestion.active {
+  background: var(--panel-2);
+}
+
+.address-suggestion span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.address-suggestion small {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9.5px;
+}

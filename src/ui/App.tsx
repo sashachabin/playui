@@ -945,6 +945,7 @@ export function App() {
               onNavigate={navigateRoute}
               onCopyLink={shareProject}
               onToggleTheme={toggleTheme}
+              routes={pages}
               onReload={reloadPreview}
               onDismissErrors={() => {
                 setBuildError("");

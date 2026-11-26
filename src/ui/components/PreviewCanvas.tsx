@@ -12,7 +12,7 @@ import {
   Sun,
   Tablet,
 } from "lucide-react";
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { PAGE_PATH } from "../lib/pages";
 import type { Device } from "../types";
 
@@ -39,6 +39,7 @@ type PreviewCanvasProps = {
   onNavigate?: (route: string) => void;
   onCopyLink?: () => Promise<boolean>;
   onToggleTheme?: () => void;
+  routes?: { path: string; label: string }[];
   onDevice: (device: Device) => void;
   onReload: () => void;
   onDismissErrors: () => void;
@@ -61,6 +62,7 @@ export function PreviewCanvas({
   onNavigate,
   onCopyLink,
   onToggleTheme,
+  routes = [],
   onDevice,
   onReload,
   onDismissErrors,
@@ -69,6 +71,9 @@ export function PreviewCanvas({
   const [draft, setDraft] = useState(route);
   const [invalid, setInvalid] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const address = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const element = frameRef.current;
@@ -87,6 +92,29 @@ export function PreviewCanvas({
     setInvalid(false);
   }, [route]);
 
+  const query = draft.trim().replace(/^\//, "").toLowerCase();
+  const suggestions = routes
+    .filter(
+      (page) =>
+        !query ||
+        page.path.replace(/^\//, "").toLowerCase().includes(query) ||
+        page.label.toLowerCase().includes(query),
+    )
+    .slice(0, 8);
+
+  useEffect(() => {
+    setSuggestionIndex(0);
+  }, [draft]);
+
+  useEffect(() => {
+    if (!suggestionsOpen) return;
+    function dismiss(event: PointerEvent) {
+      if (!address.current?.contains(event.target as Node)) setSuggestionsOpen(false);
+    }
+    window.addEventListener("pointerdown", dismiss);
+    return () => window.removeEventListener("pointerdown", dismiss);
+  }, [suggestionsOpen]);
+
   useEffect(() => {
     if (!copied) return;
     const timeout = window.setTimeout(() => setCopied(false), 1800);
@@ -102,7 +130,36 @@ export function PreviewCanvas({
       return;
     }
     setInvalid(false);
+    setSuggestionsOpen(false);
     onNavigate?.(next);
+  }
+
+  function chooseSuggestion(path: string) {
+    setDraft(path);
+    setInvalid(false);
+    setSuggestionsOpen(false);
+    onNavigate?.(path);
+  }
+
+  function addressKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      setSuggestionsOpen(false);
+      return;
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      if (suggestions.length === 0) return;
+      event.preventDefault();
+      setSuggestionsOpen(true);
+      setSuggestionIndex((current) => {
+        const direction = event.key === "ArrowDown" ? 1 : -1;
+        return (current + direction + suggestions.length) % suggestions.length;
+      });
+      return;
+    }
+    if (event.key === "Enter" && suggestionsOpen && suggestions[suggestionIndex]) {
+      event.preventDefault();
+      chooseSuggestion(suggestions[suggestionIndex].path);
+    }
   }
 
   async function copyLink() {
@@ -145,6 +202,7 @@ export function PreviewCanvas({
           </button>
         </div>
         <form
+          ref={address}
           className={`address-field ${invalid ? "invalid" : ""}`}
           onSubmit={submitAddress}
           title="Prototype path"
@@ -153,9 +211,44 @@ export function PreviewCanvas({
           <input
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
+            onFocus={() => setSuggestionsOpen(true)}
+            onBlur={(event) => {
+              if (!event.currentTarget.form?.contains(event.relatedTarget as Node)) {
+                setSuggestionsOpen(false);
+              }
+            }}
+            onKeyDown={addressKeyDown}
             aria-label="Prototype path"
+            aria-autocomplete="list"
+            aria-expanded={suggestionsOpen && suggestions.length > 0}
+            aria-controls="address-suggestions"
+            aria-activedescendant={
+              suggestionsOpen && suggestions[suggestionIndex]
+                ? `address-suggestion-${suggestionIndex}`
+                : undefined
+            }
             spellCheck={false}
           />
+          {suggestionsOpen && suggestions.length > 0 && (
+            <div className="address-suggestions" id="address-suggestions" role="listbox">
+              <div className="address-suggestions-label">Pages</div>
+              {suggestions.map((page, index) => (
+                <button
+                  key={page.path}
+                  id={`address-suggestion-${index}`}
+                  type="button"
+                  role="option"
+                  aria-selected={index === suggestionIndex}
+                  className={`address-suggestion ${index === suggestionIndex ? "active" : ""}`}
+                  onPointerMove={() => setSuggestionIndex(index)}
+                  onClick={() => chooseSuggestion(page.path)}
+                >
+                  <span>{page.label}</span>
+                  <small>{page.path}</small>
+                </button>
+              ))}
+            </div>
+          )}
         </form>
       </div>
 
