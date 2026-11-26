@@ -55,7 +55,12 @@ protected entry files.
 Editor URLs keep the project, page, preview/code mode, device, open file,
 outlines and theme (`#/p/project~id/page?...`). **Share** copies a
 self-contained link with the current project snapshot and page, so recipients
-can open the prototype without an account or server. In the shared viewer,
+can open the prototype without an account or server.
+
+Press **⌘K** (or **Ctrl+K**) anywhere to search pages, files and actions. The
+preview address bar navigates routes, keeps back/forward history, reloads and
+copies the current prototype link. The device dock also switches the preview
+theme and shares the current page. In the shared viewer,
 **Open in PlayUI** imports a copy of the project into the local workspace and
 opens it in the editor.
 

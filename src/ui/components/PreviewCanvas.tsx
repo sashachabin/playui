@@ -5,14 +5,14 @@ import {
   ArrowRight,
   Check,
   Link2,
-  Maximize2,
-  Minimize2,
   Monitor,
+  Moon,
   RotateCcw,
   Smartphone,
+  Sun,
   Tablet,
 } from "lucide-react";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { PAGE_PATH } from "../lib/pages";
 import type { Device } from "../types";
 
@@ -38,6 +38,7 @@ type PreviewCanvasProps = {
   onForward?: () => void;
   onNavigate?: (route: string) => void;
   onCopyLink?: () => Promise<boolean>;
+  onToggleTheme?: () => void;
   onDevice: (device: Device) => void;
   onReload: () => void;
   onDismissErrors: () => void;
@@ -59,6 +60,7 @@ export function PreviewCanvas({
   onForward,
   onNavigate,
   onCopyLink,
+  onToggleTheme,
   onDevice,
   onReload,
   onDismissErrors,
@@ -67,8 +69,6 @@ export function PreviewCanvas({
   const [draft, setDraft] = useState(route);
   const [invalid, setInvalid] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const canvas = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const element = frameRef.current;
@@ -92,12 +92,6 @@ export function PreviewCanvas({
     const timeout = window.setTimeout(() => setCopied(false), 1800);
     return () => window.clearTimeout(timeout);
   }, [copied]);
-
-  useEffect(() => {
-    const update = () => setIsFullscreen(document.fullscreenElement === canvas.current);
-    document.addEventListener("fullscreenchange", update);
-    return () => document.removeEventListener("fullscreenchange", update);
-  }, []);
 
   function submitAddress(event: React.FormEvent) {
     event.preventDefault();
@@ -124,18 +118,8 @@ export function PreviewCanvas({
     }
   }
 
-  async function toggleFullscreen() {
-    if (!canvas.current) return;
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await canvas.current.requestFullscreen();
-    } catch {
-      // Fullscreen can be blocked by the browser.
-    }
-  }
-
   return (
-    <div className="canvas" ref={canvas}>
+    <div className="canvas">
       <div className="canvas-addressbar">
         <div className="address-nav">
           <button
@@ -165,7 +149,7 @@ export function PreviewCanvas({
           onSubmit={submitAddress}
           title="Prototype path"
         >
-          <span className="address-origin">playui.app</span>
+          <span className="address-origin">playui.dev</span>
           <input
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
@@ -173,15 +157,6 @@ export function PreviewCanvas({
             spellCheck={false}
           />
         </form>
-        <button
-          type="button"
-          className={`address-action ${copied ? "copied" : ""}`}
-          onClick={() => void copyLink()}
-          title={copied ? "Copied" : "Copy prototype link"}
-          aria-label={copied ? "Copied" : "Copy prototype link"}
-        >
-          {copied ? <Check size={14} /> : <Link2 size={14} />}
-        </button>
       </div>
 
       {(buildError || runtimeError) && (
@@ -231,14 +206,30 @@ export function PreviewCanvas({
           ))}
         </div>
         <span className="toolbar-sep" />
-        <Hint
-          text={isFullscreen ? "Exit presentation" : "Present prototype"}
-          delayBeforeShow={250}
-          useWrapper
-        >
-          <button type="button" className="toolbar-present" onClick={() => void toggleFullscreen()}>
-            {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-            <span>{isFullscreen ? "Exit" : "Present"}</span>
+        {onToggleTheme && (
+          <Hint
+            text={isDark ? "Switch to light preview" : "Switch to dark preview"}
+            delayBeforeShow={250}
+            useWrapper
+          >
+            <button
+              type="button"
+              className="icon-button"
+              aria-label={isDark ? "Switch to light preview" : "Switch to dark preview"}
+              onClick={onToggleTheme}
+            >
+              {isDark ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+          </Hint>
+        )}
+        <Hint text={copied ? "Copied" : "Copy prototype link"} delayBeforeShow={250} useWrapper>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={copied ? "Copied" : "Copy prototype link"}
+            onClick={() => void copyLink()}
+          >
+            {copied ? <Check size={15} /> : <Link2 size={15} />}
           </button>
         </Hint>
       </div>

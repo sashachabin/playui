@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { AlertTriangle, ArrowUp } from "lucide-react";
+import { AlertTriangle, ArrowUp, Square } from "lucide-react";
 import type { Message } from "../types";
 
 type ChatPanelProps = {
@@ -8,9 +8,17 @@ type ChatPanelProps = {
   prompt: string;
   onPromptChange: (value: string) => void;
   onSubmit: (event: React.FormEvent) => void;
+  onStop: () => void;
 };
 
-export function ChatPanel({ messages, busy, prompt, onPromptChange, onSubmit }: ChatPanelProps) {
+export function ChatPanel({
+  messages,
+  busy,
+  prompt,
+  onPromptChange,
+  onSubmit,
+  onStop,
+}: ChatPanelProps) {
   const conversation = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,15 +63,27 @@ export function ChatPanel({ messages, busy, prompt, onPromptChange, onSubmit }: 
           }}
         />
         <div className="composer-bar">
-          <button
-            type="submit"
-            className="send-button"
-            aria-label="Send"
-            title="Send · Enter"
-            disabled={busy || !prompt.trim()}
-          >
-            {busy ? <span className="spinner" aria-hidden="true" /> : <ArrowUp size={16} />}
-          </button>
+          {busy ? (
+            <button
+              type="button"
+              className="send-button stop-button"
+              aria-label="Stop generating"
+              title="Stop generating"
+              onClick={onStop}
+            >
+              <Square size={11} fill="currentColor" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              className="send-button"
+              aria-label="Send"
+              title="Send · Enter"
+              disabled={!prompt.trim()}
+            >
+              <ArrowUp size={16} />
+            </button>
+          )}
         </div>
       </form>
     </aside>

@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Code2, Monitor, Pencil, Plus, Share2, X } from "lucide-react";
+import { Check, ChevronDown, Code2, Monitor, Pencil, Plus, Search, Share2, X } from "lucide-react";
 import {
   useEffect,
   useRef,
@@ -23,6 +23,7 @@ type HeaderProps = {
   onReorderProjects: (openProjects: number[]) => void;
   onRenameProject: (index: number, name: string) => void;
   onNewProject: () => void;
+  onSearch: () => void;
   onSelectTab: (tab: Tab) => void;
   onShare: () => void;
   shareState: "idle" | "copying" | "copied" | "error";
@@ -45,6 +46,7 @@ export function Header({
   onReorderProjects,
   onRenameProject,
   onNewProject,
+  onSearch,
   onSelectTab,
   onShare,
   shareState,
@@ -507,6 +509,18 @@ export function Header({
           )}
         </div>
       </div>
+
+      <button
+        type="button"
+        className="header-search"
+        onClick={onSearch}
+        aria-label="Search and commands"
+        title="Search and commands (⌘K)"
+      >
+        <Search size={14} />
+        <span>Search</span>
+        <kbd>⌘K</kbd>
+      </button>
 
       <button
         type="button"

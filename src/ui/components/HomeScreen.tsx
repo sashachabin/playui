@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { designSystemLabel, parseConfig, projectTitle } from "../lib/config";
 import type { FileEntry, Page } from "../types";
 
@@ -8,6 +8,7 @@ type HomeScreenProps = {
   activeProject: number;
   onOpenProject: (index: number) => void;
   onNewProject: () => void;
+  onSearch: () => void;
 };
 
 export function HomeScreen({
@@ -16,6 +17,7 @@ export function HomeScreen({
   activeProject,
   onOpenProject,
   onNewProject,
+  onSearch,
 }: HomeScreenProps) {
   return (
     <main className="home">
@@ -25,6 +27,11 @@ export function HomeScreen({
         </div>
         <span className="home-crumb">Projects</span>
         <span className="home-spacer" />
+        <button type="button" className="home-search" onClick={onSearch}>
+          <Search size={14} />
+          <span>Search</span>
+          <kbd>⌘K</kbd>
+        </button>
         <button type="button" className="btn btn-primary" onClick={onNewProject}>
           <Plus size={14} />
           New prototype

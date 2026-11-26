@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { compilePreview } from "../preview/compile";
 
 import { ChatPanel } from "./components/ChatPanel";
+import { CommandPalette, type Command } from "./components/CommandPalette";
 import { EditorPane } from "./components/EditorPane";
 import { FileManagerDialog } from "./components/FileManagerDialog";
 import { FileSettingsDialog } from "./components/FileSettingsDialog";
@@ -14,6 +15,7 @@ import { ProjectSidebar } from "./components/ProjectSidebar";
 import { DEFAULT_PAGES, initialFiles, type ProjectTemplate } from "./data";
 import { applyEditorActions } from "./lib/actions";
 import {
+  designSystemLabel,
   newProjectId,
   parseConfig,
   projectId,
@@ -148,6 +150,8 @@ export function App() {
   );
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
+  const generation = useRef<AbortController | null>(null);
+  const stopped = useRef(false);
   const [outlines, setOutlines] = useState(
     initialLocation.kind === "project" ? initialLocation.outlines : false,
   );
@@ -161,7 +165,18 @@ export function App() {
   const [newFileOpen, setNewFileOpen] = useState(false);
   const [fileSettingsName, setFileSettingsName] = useState<string | null>(null);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [shareState, setShareState] = useState<"idle" | "copying" | "copied" | "error">("idle");
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "k") return;
+      event.preventDefault();
+      setPaletteOpen((current) => !current);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   useEffect(() => {
     if (shareState === "idle") return;
@@ -507,6 +522,10 @@ export function App() {
     setRevision((value) => value + 1);
   }
 
+  function toggleTheme() {
+    setDark((current) => !(current ?? isDark));
+  }
+
   function createProject(template: ProjectTemplate) {
     const draft = initialFiles.map((file) => {
       if (file.name === "App.tsx") return { ...file, value: template.appSource };
@@ -575,11 +594,13 @@ export function App() {
   async function sendPrompt(event: React.FormEvent) {
     event.preventDefault();
     if (!prompt.trim() || busy) return;
+    stopped.current = false;
     const submittedPrompt = prompt.trim();
     setMessages((current) => [...current, { role: "user", text: submittedPrompt }]);
     setPrompt("");
     setBusy(true);
     const controller = new AbortController();
+    generation.current = controller;
     const timeout = window.setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
     try {
       const response = await fetch(import.meta.env.VITE_AI_API_URL || "/api/generate", {
@@ -650,18 +671,26 @@ export function App() {
         { role: "assistant", text: `${result.text ?? "Updated prototype."}${notes}` },
       ]);
     } catch (error) {
-      const message =
-        error instanceof DOMException && error.name === "AbortError"
-          ? "The request timed out. Try a smaller change or retry."
-          : error instanceof Error
-            ? error.message
-            : "AI request failed";
+      const aborted = error instanceof DOMException && error.name === "AbortError";
+      const message = aborted
+        ? stopped.current
+          ? "Generation stopped."
+          : "The request timed out. Try a smaller change or retry."
+        : error instanceof Error
+          ? error.message
+          : "AI request failed";
       setMessages((current) => [...current, { role: "error", text: message }]);
       setPrompt((current) => current || submittedPrompt);
     } finally {
       window.clearTimeout(timeout);
+      if (generation.current === controller) generation.current = null;
       setBusy(false);
     }
+  }
+
+  function stopGeneration() {
+    stopped.current = true;
+    generation.current?.abort();
   }
 
   function openFile(name: string) {
@@ -711,6 +740,107 @@ export function App() {
   const projectPath = `file:///prototype/draft-${project}`;
   const declarations = useMemo(() => files.filter(({ name }) => name.endsWith(".d.ts")), [files]);
 
+  const commands: Command[] = [];
+  if (view === "workspace") {
+    commands.push(
+      { id: "projects", label: "Go to projects", group: "Navigate", run: goHome },
+      {
+        id: "preview",
+        label: "Show preview",
+        group: "View",
+        hint: "Preview",
+        run: () => setTab("preview"),
+      },
+      {
+        id: "code",
+        label: "Open code",
+        group: "View",
+        hint: "Code",
+        run: () => setTab("code"),
+      },
+      {
+        id: "theme",
+        label: "Toggle preview theme",
+        group: "View",
+        hint: isDark ? "Light" : "Dark",
+        run: toggleTheme,
+      },
+      { id: "reload", label: "Reload preview", group: "View", run: reloadPreview },
+    );
+    for (const [value, label] of [
+      ["desktop", "Desktop"],
+      ["tablet", "Tablet"],
+      ["mobile", "Mobile"],
+    ] as const) {
+      commands.push({
+        id: `device-${value}`,
+        label: `Use ${label.toLowerCase()} preview`,
+        group: "View",
+        hint: device === value ? "Active" : undefined,
+        run: () => setDevice(value),
+      });
+    }
+    for (const page of pages) {
+      commands.push({
+        id: `page-${page.path}`,
+        label: page.label,
+        group: "Pages",
+        hint: page.path,
+        keywords: "page screen navigate",
+        run: () => selectPage(page.path),
+      });
+    }
+    for (const file of files) {
+      commands.push({
+        id: `file-${file.name}`,
+        label: file.name,
+        group: "Files",
+        hint: "Open in code",
+        keywords: "file code edit",
+        run: () => openFile(file.name),
+      });
+    }
+    for (const index of openProjects) {
+      commands.push({
+        id: `tab-${index}`,
+        label: projectTitle(projects[index] ?? [], index),
+        group: "Open tabs",
+        hint: index === project ? "Active tab" : "Switch tab",
+        keywords: "project tab switch",
+        run: () => openProject(index, projects[index]!),
+      });
+    }
+    commands.push(
+      { id: "new-page", label: "New page", group: "Create", run: addPage },
+      { id: "new-file", label: "New file", group: "Create", run: () => setNewFileOpen(true) },
+      {
+        id: "new-project",
+        label: "New prototype",
+        group: "Create",
+        run: () => setNewProjectOpen(true),
+      },
+      { id: "share", label: "Copy prototype link", group: "Share", run: () => void shareProject() },
+    );
+  } else {
+    for (const [index, projectFiles] of projects.entries()) {
+      const config = parseConfig(projectFiles);
+      commands.push({
+        id: `project-${index}`,
+        label: projectTitle(projectFiles, index),
+        group: "Projects",
+        hint: designSystemLabel(config?.designSystem),
+        keywords: "open project prototype",
+        run: () => openProject(index, projects[index]!),
+      });
+    }
+    commands.push({
+      id: "new-project",
+      label: "New prototype",
+      group: "Create",
+      run: () => setNewProjectOpen(true),
+    });
+  }
+
   if (view === "home") {
     return (
       <>
@@ -720,6 +850,7 @@ export function App() {
           activeProject={project}
           onOpenProject={(index) => openProject(index, projects[index]!)}
           onNewProject={() => setNewProjectOpen(true)}
+          onSearch={() => setPaletteOpen(true)}
         />
         {newProjectOpen && (
           <NewPrototypeDialog
@@ -729,6 +860,9 @@ export function App() {
               setNewProjectOpen(false);
             }}
           />
+        )}
+        {paletteOpen && (
+          <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />
         )}
       </>
     );
@@ -750,6 +884,7 @@ export function App() {
         onReorderProjects={reorderProjects}
         onRenameProject={renameProject}
         onNewProject={() => setNewProjectOpen(true)}
+        onSearch={() => setPaletteOpen(true)}
         onSelectTab={setTab}
         onShare={() => void shareProject()}
         shareState={shareState}
@@ -809,6 +944,7 @@ export function App() {
               onForward={goForward}
               onNavigate={navigateRoute}
               onCopyLink={shareProject}
+              onToggleTheme={toggleTheme}
               onReload={reloadPreview}
               onDismissErrors={() => {
                 setBuildError("");
@@ -824,6 +960,7 @@ export function App() {
           prompt={prompt}
           onPromptChange={setPrompt}
           onSubmit={(event) => void sendPrompt(event)}
+          onStop={stopGeneration}
         />
       </div>
 
@@ -878,6 +1015,8 @@ export function App() {
           onDelete={deleteFile}
         />
       )}
+
+      {paletteOpen && <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />}
     </main>
   );
 }
